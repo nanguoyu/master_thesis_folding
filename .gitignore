@@ -5,3 +5,4 @@ __pycache__/
 .DS_Store
 # Auto-downloaded by ultralytics during smoke tests; canonical checkpoints live under weights/.
 /yolov8n.pt
+script/logs/
