@@ -114,30 +114,10 @@ Three repair variants:
   deep nets with strong feature correlation; all CV evidence is BN-based
   architectures; detection/segmentation heads are untested.
 
-## Connections — to this project (`master_thesis_folding`)
+## Connections to this project
 
-This repo is a master-student attempt to port model folding to **YOLOv8m**
-(object detection on COCO), `folding_main.py`. Findings from cross-checking the
-paper + both official repos:
-
-- **Clustering/merging is essentially correct.** `cumpute_cluster_matrix_u`
-  builds $\mathbf{A}=[\mathbf{W}_l\mid\mathbf{W}_{l+1}^T]$ and $k$-means it —
-  matches `concat_weights`/`compress_weight_clustering`. `merge_conv_bn` merges
-  output channels by $\mathbf{M}$ (mean) and input channels by $\mathbf{U}^T$
-  (sum) — matches `merge_channel_clustering` (axis 0 → $\mathbf{M}$, axis 1 → sum).
-- **The forward-pass REPAIR is mis-scoped — the core bug.** Both official repos
-  (`ModelFolding/.../test_merge` and `model-folding-universal/core/repair.py::
-  reset_bn_stats`) reset **every** `BatchNorm2d` before the forward pass
-  ("resetting stats ... is necessary for stability"). The student's
-  `repair_bn_forward_pass` resets **only the BN of folded convs**. Folding also
-  corrupts the *input-folded* next layer (summed input → variance explosion)
-  and everything downstream; those BNs are never reset. `model.train()` then
-  silently mutates the ~50 un-reset BNs too. This is why forward-pass REPAIR
-  helps pruning (which calls it with `config_path=None` → resets all BN) but
-  hurts folding.
-- **Fold-AR is not implemented.** The paper's main data-free contribution
-  (closed-form $\Sigma_s$ rescaling by $N_c/\sqrt{N_c+(N_c^2-N_c)E[c]}$,
-  see `merge_channel_clustering_approx_repair`) is absent. Porting it is the
-  highest-value next step and needs no calibration data.
-- The student clusters **raw** conv weights, not BN-normalized weights
-  $\hat{\mathbf{W}}_l=\Sigma_n\mathbf{W}_l$ as Fold-AR's Algorithm 1 specifies.
+This document is the paper-side reference. For the project-side analysis —
+which correctness fixes have been applied in `folding_main.py`, which PR
+sweeps have been run on YOLOv8m / YOLOv8l + COCO val2017, and what the
+results imply — see [`../FINDINGS.md`](../FINDINGS.md). It's kept in sync
+with the code; this file is not.
