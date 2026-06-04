@@ -1,0 +1,602 @@
+\begin{thebibliography}{86}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Ainsworth et~al.(2023)Ainsworth, Hayase, and
+  Srinivasa]{ainsworth2023git}
+S.~K. Ainsworth, J.~Hayase, and S.~Srinivasa.
+\newblock Git re-basin: Merging models modulo permutation symmetries, 2023.
+\newblock URL \url{https://arxiv.org/abs/2209.04836}.
+
+\bibitem[An et~al.(2023)An, Zhao, Yu, Tang, and Wang]{flap}
+Y.~An, X.~Zhao, T.~Yu, M.~Tang, and J.~Wang.
+\newblock Fluctuation-based adaptive structured pruning for large language
+  models, 2023.
+\newblock URL \url{https://arxiv.org/abs/2312.11983}.
+
+\bibitem[{Arduino}(2024)]{arduino_nano_33_ble}
+{Arduino}.
+\newblock Arduino nano 33 ble documentation.
+\newblock \url{https://docs.arduino.cc/hardware/nano-33-ble/}, 2024.
+\newblock Accessed: 2024-11-19.
+
+\bibitem[Ashkboos et~al.(2024)Ashkboos, Croci, do~Nascimento, Hoefler, and
+  Hensman]{slicegpt}
+S.~Ashkboos, M.~L. Croci, M.~G. do~Nascimento, T.~Hoefler, and J.~Hensman.
+\newblock Slicegpt: Compress large language models by deleting rows and
+  columns, 2024.
+\newblock URL \url{https://arxiv.org/abs/2401.15024}.
+
+\bibitem[Bauckhage(2015)]{bauckhage2015kmeansclusteringmatrixfactorization}
+C.~Bauckhage.
+\newblock k-means clustering is matrix factorization, 2015.
+\newblock URL \url{https://arxiv.org/abs/1512.07548}.
+
+\bibitem[Bishop(2006)]{Bishop2006}
+C.~M. Bishop.
+\newblock \emph{Pattern Recognition and Machine Learning (Information Science
+  and Statistics)}.
+\newblock Springer-Verlag, Berlin, Heidelberg, 2006.
+\newblock ISBN 0387310738.
+
+\bibitem[Bommasani et~al.(2021)Bommasani, Hudson, Adeli, Altman, Arora, von
+  Arx, Bernstein, Bohg, Bosselut, Brunskill,
+  et~al.]{bommasani2021opportunities}
+R.~Bommasani, D.~A. Hudson, E.~Adeli, R.~Altman, S.~Arora, S.~von Arx, M.~S.
+  Bernstein, J.~Bohg, A.~Bosselut, E.~Brunskill, et~al.
+\newblock On the opportunities and risks of foundation models.
+\newblock \emph{arXiv preprint arXiv:2108.07258}, 2021.
+\newblock URL \url{https://arxiv.org/abs/2108.07258}.
+
+\bibitem[Cai et~al.(2020)Cai, Gan, Wang, Zhang, and Han]{cai2020onceforall}
+H.~Cai, C.~Gan, T.~Wang, Z.~Zhang, and S.~Han.
+\newblock Once-for-all: Train one network and specialize it for efficient
+  deployment, 2020.
+
+\bibitem[Chang et~al.(2024)Chang, Wang, Wang, Wu, Yang, Zhu, Chen, Yi, Wang,
+  Wang, et~al.]{chang2024survey}
+Y.~Chang, X.~Wang, J.~Wang, Y.~Wu, L.~Yang, K.~Zhu, H.~Chen, X.~Yi, C.~Wang,
+  Y.~Wang, et~al.
+\newblock A survey on evaluation of large language models.
+\newblock \emph{ACM Transactions on Intelligent Systems and Technology},
+  15\penalty0 (3):\penalty0 1--45, 2024.
+
+\bibitem[Chen et~al.(2019)Chen, Wang, Xu, Yang, Liu, Shi, Xu, Xu, and
+  Tian]{chen2019datafreelearningstudentnetworks}
+H.~Chen, Y.~Wang, C.~Xu, Z.~Yang, C.~Liu, B.~Shi, C.~Xu, C.~Xu, and Q.~Tian.
+\newblock Data-free learning of student networks, 2019.
+\newblock URL \url{https://arxiv.org/abs/1904.01186}.
+
+\bibitem[Chen et~al.(2020)Chen, Zheng, Zhang, Wang, Shen, and
+  Zhang]{chen2020deep}
+Y.~Chen, B.~Zheng, Z.~Zhang, Q.~Wang, C.~Shen, and Q.~Zhang.
+\newblock Deep learning on mobile and embedded devices: State-of-the-art,
+  challenges, and future directions.
+\newblock \emph{ACM Computing Surveys (CSUR)}, 53\penalty0 (4):\penalty0 1--37,
+  2020.
+
+\bibitem[Chen et~al.(2023)Chen, Zhou, and Yan]{chen2023going}
+Y.~Chen, Z.~Zhou, and J.~Yan.
+\newblock Going beyond neural network feature similarity: The network feature
+  complexity and its interpretation using category theory.
+\newblock \emph{arXiv preprint arXiv:2310.06756}, 2023.
+
+\bibitem[Cheng et~al.(2023)Cheng, Zhang, and
+  Shi]{cheng2023surveydeepneuralnetwork}
+H.~Cheng, M.~Zhang, and J.~Q. Shi.
+\newblock A survey on deep neural network pruning-taxonomy, comparison,
+  analysis, and recommendations, 2023.
+\newblock URL \url{https://arxiv.org/abs/2308.06767}.
+
+\bibitem[Corti et~al.(2024{\natexlab{a}})Corti, Maag, Schauer, Pferschy, and
+  Saukh]{corti2024hads}
+F.~Corti, B.~Maag, J.~Schauer, U.~Pferschy, and O.~Saukh.
+\newblock {HADS}: Hardware-aware deep subnetworks.
+\newblock In \emph{5th Workshop on practical ML for limited/low resource
+  settings}, 2024{\natexlab{a}}.
+\newblock URL \url{https://openreview.net/forum?id=oDacwa4yb2}.
+
+\bibitem[Corti et~al.(2024{\natexlab{b}})Corti, Maag, Schauer, Pferschy, and
+  Saukh]{corti2024redsresourceefficientdeepsubnetworks}
+F.~Corti, B.~Maag, J.~Schauer, U.~Pferschy, and O.~Saukh.
+\newblock {REDS}: Resource-efficient deep subnetworks for dynamic resource
+  constraints, 2024{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2311.13349}.
+
+\bibitem[Deng et~al.(2009)Deng, Dong, Socher, Li, Li, and
+  Fei-Fei]{deng2009imagenet}
+J.~Deng, W.~Dong, R.~Socher, L.-J. Li, K.~Li, and L.~Fei-Fei.
+\newblock Imagenet: A large-scale hierarchical image database.
+\newblock In \emph{2009 IEEE conference on computer vision and pattern
+  recognition}, pages 248--255. Ieee, 2009.
+
+\bibitem[Entezari and
+  Saukh(2020)]{entezari2020classdependentcompressiondeepneural}
+R.~Entezari and O.~Saukh.
+\newblock Class-dependent compression of deep neural networks, 2020.
+\newblock URL \url{https://arxiv.org/abs/1909.10364}.
+
+\bibitem[Entezari et~al.(2022)Entezari, Sedghi, Saukh, and
+  Neyshabur]{entezari2022role}
+R.~Entezari, H.~Sedghi, O.~Saukh, and B.~Neyshabur.
+\newblock The role of permutation invariance in linear mode connectivity of
+  neural networks, 2022.
+\newblock URL \url{https://arxiv.org/abs/2110.06296}.
+
+\bibitem[{Espressif Systems}(2024)]{esp_eye}
+{Espressif Systems}.
+\newblock Esp-eye development board - espressif systems.
+\newblock \url{https://www.espressif.com/en/products/devkits/esp-eye/overview},
+  2024.
+\newblock Accessed: 2024-11-19.
+
+\bibitem[Fang et~al.(2020)Fang, Song, Shen, Wang, Chen, and
+  Song]{fang2020datafreeadversarialdistillation}
+G.~Fang, J.~Song, C.~Shen, X.~Wang, D.~Chen, and M.~Song.
+\newblock Data-free adversarial distillation, 2020.
+\newblock URL \url{https://arxiv.org/abs/1912.11006}.
+
+\bibitem[Frankle and Carbin(2018)]{frankle2018lottery}
+J.~Frankle and M.~Carbin.
+\newblock The lottery ticket hypothesis: Finding sparse, trainable neural
+  networks.
+\newblock \emph{arXiv preprint arXiv:1803.03635}, 2018.
+\newblock URL \url{https://arxiv.org/abs/1803.03635}.
+
+\bibitem[Frantar and Alistarh(2022)]{frantar2022optimal}
+E.~Frantar and D.~Alistarh.
+\newblock Optimal brain compression: A framework for accurate post-training
+  quantization and pruning.
+\newblock \emph{Advances in Neural Information Processing Systems},
+  35:\penalty0 4475--4488, 2022.
+
+\bibitem[Gao et~al.(2024)Gao, Tow, Abbasi, Biderman, Black, DiPofi, Foster,
+  Golding, Hsu, Le~Noac'h, Li, McDonell, Muennighoff, Ociepa, Phang, Reynolds,
+  Schoelkopf, Skowron, Sutawika, Tang, Thite, Wang, Wang, and
+  Zou]{eval-harness}
+L.~Gao, J.~Tow, B.~Abbasi, S.~Biderman, S.~Black, A.~DiPofi, C.~Foster,
+  L.~Golding, J.~Hsu, A.~Le~Noac'h, H.~Li, K.~McDonell, N.~Muennighoff,
+  C.~Ociepa, J.~Phang, L.~Reynolds, H.~Schoelkopf, A.~Skowron, L.~Sutawika,
+  E.~Tang, A.~Thite, B.~Wang, K.~Wang, and A.~Zou.
+\newblock A framework for few-shot language model evaluation, 07 2024.
+\newblock URL \url{https://zenodo.org/records/12608602}.
+
+\bibitem[Gholami et~al.(2021)Gholami, Kim, Dong, Yao, Mahoney, and
+  Keutzer]{gholami2021surveyquantizationmethodsefficient}
+A.~Gholami, S.~Kim, Z.~Dong, Z.~Yao, M.~W. Mahoney, and K.~Keutzer.
+\newblock A survey of quantization methods for efficient neural network
+  inference, 2021.
+\newblock URL \url{https://arxiv.org/abs/2103.13630}.
+
+\bibitem[Gou et~al.(2021)Gou, Yu, Maybank, and Tao]{Gou_2021}
+J.~Gou, B.~Yu, S.~J. Maybank, and D.~Tao.
+\newblock Knowledge distillation: A survey.
+\newblock \emph{International Journal of Computer Vision}, 129\penalty0
+  (6):\penalty0 1789–1819, Mar. 2021.
+\newblock ISSN 1573-1405.
+\newblock \doi{10.1007/s11263-021-01453-z}.
+\newblock URL \url{http://dx.doi.org/10.1007/s11263-021-01453-z}.
+
+\bibitem[Gunasekar et~al.(2017)Gunasekar, Woodworth, Bhojanapalli, Neyshabur,
+  and Srebro]{gunasekar2017implicitregularizationmatrixfactorization}
+S.~Gunasekar, B.~Woodworth, S.~Bhojanapalli, B.~Neyshabur, and N.~Srebro.
+\newblock Implicit regularization in matrix factorization, 2017.
+\newblock URL \url{https://arxiv.org/abs/1705.09280}.
+
+\bibitem[Gupta et~al.(2015)Gupta, Agrawal, Gopalakrishnan, and
+  Narayanan]{gupta2015deep}
+S.~Gupta, A.~Agrawal, K.~Gopalakrishnan, and P.~Narayanan.
+\newblock Deep learning with limited numerical precision.
+\newblock In \emph{International conference on machine learning}, pages
+  1737--1746. PMLR, 2015.
+
+\bibitem[Han et~al.(2015)Han, Pool, Tran, and Dally]{han2015learning}
+S.~Han, J.~Pool, J.~Tran, and W.~Dally.
+\newblock Learning both weights and connections for efficient neural network.
+\newblock \emph{Advances in neural information processing systems}, 28, 2015.
+
+\bibitem[Hassibi et~al.(1993)Hassibi, Stork, and Wolff]{hassibi1993optimal}
+B.~Hassibi, D.~G. Stork, and G.~J. Wolff.
+\newblock Optimal brain surgeon and general network pruning.
+\newblock In \emph{IEEE international conference on neural networks}, pages
+  293--299. IEEE, 1993.
+
+\bibitem[He et~al.(2016)He, Zhang, Ren, and Sun]{he2016deep}
+K.~He, X.~Zhang, S.~Ren, and J.~Sun.
+\newblock Deep residual learning for image recognition.
+\newblock In \emph{Proceedings of the IEEE conference on computer vision and
+  pattern recognition}, pages 770--778, 2016.
+
+\bibitem[He et~al.(2018)He, Zhou, and Thiele]{he2018multi}
+X.~He, Z.~Zhou, and L.~Thiele.
+\newblock Multi-task zipping via layer-wise neuron sharing.
+\newblock \emph{Advances in Neural Information Processing Systems}, 31, 2018.
+
+\bibitem[He et~al.(2017)He, Zhang, and Sun]{he2017iccv}
+Y.~He, X.~Zhang, and J.~Sun.
+\newblock Channel pruning for accelerating very deep neural networks.
+\newblock In \emph{Proceedings of the IEEE International Conference on Computer
+  Vision (ICCV)}, Oct 2017.
+
+\bibitem[Hinton et~al.(2015)Hinton, Vinyals, and
+  Dean]{hinton2015distillingknowledgeneuralnetwork}
+G.~Hinton, O.~Vinyals, and J.~Dean.
+\newblock Distilling the knowledge in a neural network, 2015.
+\newblock URL \url{https://arxiv.org/abs/1503.02531}.
+
+\bibitem[Horvath et~al.(2024)Horvath, Laskaridis, Rajput, and
+  Wang]{horvath2024maestrouncoveringlowrankstructures}
+S.~Horvath, S.~Laskaridis, S.~Rajput, and H.~Wang.
+\newblock Maestro: Uncovering low-rank structures via trainable decomposition,
+  2024.
+\newblock URL \url{https://arxiv.org/abs/2308.14929}.
+
+\bibitem[Hu et~al.(2016)Hu, Peng, Tai, and Tang]{hu2016networktrimming}
+H.~Hu, R.~Peng, Y.-W. Tai, and C.-K. Tang.
+\newblock Network trimming: A data-driven neuron pruning approach towards
+  efficient deep architectures, 2016.
+\newblock URL \url{https://arxiv.org/abs/1607.03250}.
+
+\bibitem[Ioffe and Szegedy(2015)]{ioffe2015BatchNormalizationacceleratingdeep}
+S.~Ioffe and C.~Szegedy.
+\newblock Batch normalization: Accelerating deep network training by reducing
+  internal covariate shift, 2015.
+\newblock URL \url{https://arxiv.org/abs/1502.03167}.
+
+\bibitem[Jacobs et~al.(1991)Jacobs, Jordan, Nowlan, and
+  Hinton]{jacobs1991adaptive}
+R.~A. Jacobs, M.~I. Jordan, S.~J. Nowlan, and G.~E. Hinton.
+\newblock Adaptive mixtures of local experts.
+\newblock \emph{Neural computation}, 3\penalty0 (1):\penalty0 79--87, 1991.
+
+\bibitem[Jin et~al.(2023)Jin, Ren, Preotiuc-Pietro, and
+  Cheng]{jin2023datalessknowledgefusionmerging}
+X.~Jin, X.~Ren, D.~Preotiuc-Pietro, and P.~Cheng.
+\newblock Dataless knowledge fusion by merging weights of language models,
+  2023.
+\newblock URL \url{https://arxiv.org/abs/2212.09849}.
+
+\bibitem[Jolicoeur-Martineau et~al.(2024)Jolicoeur-Martineau, Gervais, Fatras,
+  Zhang, and Lacoste-Julien]{papa}
+A.~Jolicoeur-Martineau, E.~Gervais, K.~Fatras, Y.~Zhang, and S.~Lacoste-Julien.
+\newblock Population parameter averaging (papa), 2024.
+\newblock URL \url{https://arxiv.org/abs/2304.03094}.
+
+\bibitem[Jordan et~al.(2022)Jordan, Sedghi, Saukh, Entezari, and
+  Neyshabur]{jordan2022repair}
+K.~Jordan, H.~Sedghi, O.~Saukh, R.~Entezari, and B.~Neyshabur.
+\newblock Repair: Renormalizing permuted activations for interpolation repair.
+\newblock \emph{arXiv preprint arXiv:2211.08403}, 2022.
+\newblock URL \url{https://arxiv.org/abs/2211.08403}.
+
+\bibitem[Kantorovich(2006)]{kantorovich2006translocation}
+L.~V. Kantorovich.
+\newblock On the translocation of masses.
+\newblock \emph{Journal of mathematical sciences}, 133\penalty0 (4):\penalty0
+  1381--1382, 2006.
+
+\bibitem[Kim et~al.(2016)Kim, Park, Yoo, Choi, Yang, and
+  Shin]{kim2016compressiondeepconvolutionalneural}
+Y.-D. Kim, E.~Park, S.~Yoo, T.~Choi, L.~Yang, and D.~Shin.
+\newblock Compression of deep convolutional neural networks for fast and low
+  power mobile applications, 2016.
+\newblock URL \url{https://arxiv.org/abs/1511.06530}.
+
+\bibitem[Krizhevsky et~al.(2009{\natexlab{a}})Krizhevsky, Hinton,
+  et~al.]{cifar10}
+A.~Krizhevsky, G.~Hinton, et~al.
+\newblock Learning multiple layers of features from tiny images.
+\newblock 2009{\natexlab{a}}.
+
+\bibitem[Krizhevsky et~al.(2009{\natexlab{b}})Krizhevsky, Nair, and
+  Hinton]{cifar100}
+A.~Krizhevsky, V.~Nair, and G.~Hinton.
+\newblock Cifar-100 and cifar-10 (canadian institute for advanced research),
+  2009{\natexlab{b}}.
+\newblock URL \url{http://www.cs.toronto.edu/~kriz/cifar.html}.
+\newblock MIT License.
+
+\bibitem[Kuhn(1955)]{Kuhn2010TheHM}
+H.~W. Kuhn.
+\newblock The hungarian method for the assignment problem.
+\newblock \emph{Naval Research Logistics (NRL)}, 52, 1955.
+
+\bibitem[Kumar et~al.(2017)Kumar, Goyal, and Varma]{kumar2017resource}
+A.~Kumar, S.~Goyal, and M.~Varma.
+\newblock Resource-efficient machine learning in 2 kb ram for the internet of
+  things.
+\newblock In \emph{International conference on machine learning}, pages
+  1935--1944. PMLR, 2017.
+
+\bibitem[Lebedev et~al.(2015)Lebedev, Ganin, Rakhuba, Oseledets, and
+  Lempitsky]{lebedev2015speedingupconvolutionalneuralnetworks}
+V.~Lebedev, Y.~Ganin, M.~Rakhuba, I.~Oseledets, and V.~Lempitsky.
+\newblock Speeding-up convolutional neural networks using fine-tuned
+  cp-decomposition, 2015.
+\newblock URL \url{https://arxiv.org/abs/1412.6553}.
+
+\bibitem[LeCun et~al.(1989)LeCun, Denker, and Solla]{NIPS1989_6c9882bb}
+Y.~LeCun, J.~Denker, and S.~Solla.
+\newblock Optimal brain damage.
+\newblock In D.~Touretzky, editor, \emph{Advances in Neural Information
+  Processing Systems}, volume~2. Morgan-Kaufmann, 1989.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper_files/paper/1989/file/6c9882bbac1c7093bd25041881277658-Paper.pdf}.
+
+\bibitem[Leitner et~al.(2023)Leitner, Mirza, Lin, Micorek, Masana, Kozinski,
+  Possegger, and Bischof]{leitner2023sitrelaxlearningdrive}
+S.~Leitner, M.~J. Mirza, W.~Lin, J.~Micorek, M.~Masana, M.~Kozinski,
+  H.~Possegger, and H.~Bischof.
+\newblock Sit back and relax: Learning to drive incrementally in all weather
+  conditions, 2023.
+\newblock URL \url{https://arxiv.org/abs/2305.18953}.
+
+\bibitem[Li et~al.(2016{\natexlab{a}})Li, Liu, Wang, Zhang, and
+  Yan]{li2016ternary}
+F.~Li, B.~Liu, X.~Wang, B.~Zhang, and J.~Yan.
+\newblock Ternary weight networks.
+\newblock \emph{arXiv preprint arXiv:1605.04711}, 2016{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/1605.04711}.
+
+\bibitem[Li et~al.(2016{\natexlab{b}})Li, Kadav, Durdanovic, Samet, and
+  Graf]{li2016pruning}
+H.~Li, A.~Kadav, I.~Durdanovic, H.~Samet, and H.~P. Graf.
+\newblock Pruning filters for efficient convnets.
+\newblock \emph{arXiv preprint arXiv:1608.08710}, 2016{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/1608.08710}.
+
+\bibitem[Li et~al.(2017)Li, Kadav, Durdanovic, Samet, and
+  Graf]{li2017pruningfiltersefficientconvnets}
+H.~Li, A.~Kadav, I.~Durdanovic, H.~Samet, and H.~P. Graf.
+\newblock Pruning filters for efficient convnets, 2017.
+\newblock URL \url{https://arxiv.org/abs/1608.08710}.
+
+\bibitem[Li et~al.(2015)Li, Yosinski, Clune, Lipson, and
+  Hopcroft]{li2015convergent}
+Y.~Li, J.~Yosinski, J.~Clune, H.~Lipson, and J.~Hopcroft.
+\newblock Convergent learning: Do different neural networks learn the same
+  representations?
+\newblock \emph{arXiv preprint arXiv:1511.07543}, 2015.
+\newblock URL \url{https://arxiv.org/abs/1511.07543}.
+
+\bibitem[Liu et~al.(2024)Liu, Galindo, Xie, Wong, Shuai, Li, and
+  Cheng]{liu2024lightweightdeeplearningresourceconstrained}
+H.-I. Liu, M.~Galindo, H.~Xie, L.-K. Wong, H.-H. Shuai, Y.-H. Li, and W.-H.
+  Cheng.
+\newblock Lightweight deep learning for resource-constrained environments: A
+  survey, 2024.
+\newblock URL \url{https://arxiv.org/abs/2404.07236}.
+
+\bibitem[Luo et~al.(2017{\natexlab{a}})Luo, Wu, and Lin]{luo2017iccv}
+J.-H. Luo, J.~Wu, and W.~Lin.
+\newblock Thinet: A filter level pruning method for deep neural network
+  compression.
+\newblock In \emph{Proceedings of the IEEE International Conference on Computer
+  Vision (ICCV)}, Oct 2017{\natexlab{a}}.
+
+\bibitem[Luo et~al.(2017{\natexlab{b}})Luo, Wu, and Lin]{luo2017thinet}
+J.-H. Luo, J.~Wu, and W.~Lin.
+\newblock Thinet: A filter level pruning method for deep neural network
+  compression.
+\newblock In \emph{Proceedings of the IEEE international conference on computer
+  vision}, pages 5058--5066, 2017{\natexlab{b}}.
+
+\bibitem[Ma et~al.(2023)Ma, Fang, and Wang]{llmpruner}
+X.~Ma, G.~Fang, and X.~Wang.
+\newblock Llm-pruner: On the structural pruning of large language models.
+\newblock \emph{Advances in neural information processing systems},
+  36:\penalty0 21702--21720, 2023.
+
+\bibitem[Matena and
+  Raffel(2022)]{matena2022mergingmodelsfisherweightedaveraging}
+M.~Matena and C.~Raffel.
+\newblock Merging models with fisher-weighted averaging, 2022.
+\newblock URL \url{https://arxiv.org/abs/2111.09832}.
+
+\bibitem[Men et~al.(2024)Men, Xu, Zhang, Wang, Lin, Lu, Han, and
+  Chen]{shortgpt}
+X.~Men, M.~Xu, Q.~Zhang, B.~Wang, H.~Lin, Y.~Lu, X.~Han, and W.~Chen.
+\newblock Shortgpt: Layers in large language models are more redundant than you
+  expect, 2024.
+\newblock URL \url{https://arxiv.org/abs/2403.03853}.
+
+\bibitem[Merity et~al.(2016)Merity, Xiong, Bradbury, and Socher]{wikitext2}
+S.~Merity, C.~Xiong, J.~Bradbury, and R.~Socher.
+\newblock Pointer sentinel mixture models.
+\newblock \emph{arXiv preprint arXiv:1609.07843}, 2016.
+\newblock URL \url{https://arxiv.org/abs/1609.07843}.
+
+\bibitem[Micaelli and
+  Storkey(2019)]{micaelli2019zeroshotknowledgetransferadversarial}
+P.~Micaelli and A.~Storkey.
+\newblock Zero-shot knowledge transfer via adversarial belief matching, 2019.
+\newblock URL \url{https://arxiv.org/abs/1905.09768}.
+
+\bibitem[Monge(1781)]{monge1781memoire}
+G.~Monge.
+\newblock M{\'e}moire sur la th{\'e}orie des d{\'e}blais et des remblais.
+\newblock \emph{Mem. Math. Phys. Acad. Royale Sci.}, pages 666--704, 1781.
+
+\bibitem[Mordvintsev et~al.(2015)Mordvintsev, Olah, and Tyka]{inceptionism2015}
+A.~Mordvintsev, C.~Olah, and M.~Tyka.
+\newblock Inceptionism: Going deeper into neural networks, 2015.
+\newblock URL
+  \url{https://research.googleblog.com/2015/06/inceptionism-going-deeper-into-neural.html}.
+
+\bibitem[{NVIDIA}(2024)]{nvidia_jetson_nano}
+{NVIDIA}.
+\newblock Jetson nano - nvidia developer.
+\newblock
+  \url{https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-nano/product-development/},
+  2024.
+\newblock Accessed: 2024-11-19.
+
+\bibitem[Papst et~al.(2024)Papst, Kraus, Rechberger, and Saukh]{papst2024scn}
+F.~Papst, D.~Kraus, M.~Rechberger, and O.~Saukh.
+\newblock Sensor-guided adaptive machine learning on resource-constrained
+  devices.
+\newblock In \emph{Proceedings of the International Conference on the Internet
+  of Things}, 2024.
+
+\bibitem[Ren and Zhu(2023)]{ren2023lowrankpruneandfactorizelanguagemodel}
+S.~Ren and K.~Q. Zhu.
+\newblock Low-rank prune-and-factorize for language model compression, 2023.
+\newblock URL \url{https://arxiv.org/abs/2306.14152}.
+
+\bibitem[Rombach et~al.(2022)Rombach, Blattmann, Lorenz, Esser, and
+  Ommer]{rombach2022high}
+R.~Rombach, A.~Blattmann, D.~Lorenz, P.~Esser, and B.~Ommer.
+\newblock High-resolution image synthesis with latent diffusion models.
+\newblock In \emph{Proceedings of the IEEE/CVF conference on computer vision
+  and pattern recognition}, pages 10684--10695, 2022.
+
+\bibitem[Shazeer et~al.(2017)Shazeer, Mirhoseini, Maziarz, Davis, Le, Hinton,
+  and Dean]{shazeer2017outrageously}
+N.~Shazeer, A.~Mirhoseini, K.~Maziarz, A.~Davis, Q.~Le, G.~Hinton, and J.~Dean.
+\newblock Outrageously large neural networks: The sparsely-gated
+  mixture-of-experts layer.
+\newblock \emph{arXiv preprint arXiv:1701.06538}, 2017.
+
+\bibitem[Simonyan and Zisserman(2014)]{simonyan2014very}
+K.~Simonyan and A.~Zisserman.
+\newblock Very deep convolutional networks for large-scale image recognition.
+\newblock \emph{arXiv preprint arXiv:1409.1556}, 2014.
+\newblock URL \url{https://arxiv.org/abs/1409.1556}.
+
+\bibitem[Singh and Jaggi(2020)]{singh2020model}
+S.~P. Singh and M.~Jaggi.
+\newblock Model fusion via optimal transport.
+\newblock \emph{Advances in Neural Information Processing Systems},
+  33:\penalty0 22045--22055, 2020.
+
+\bibitem[Solodskikh et~al.(2023)Solodskikh, Kurbanov, Aydarkhanov, Zhelavskaya,
+  Parfenov, Song, and Lefkimmiatis]{Solodskikh_2023_CVPR}
+K.~Solodskikh, A.~Kurbanov, R.~Aydarkhanov, I.~Zhelavskaya, Y.~Parfenov,
+  D.~Song, and S.~Lefkimmiatis.
+\newblock Integral neural networks.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition (CVPR)}, pages 16113--16122, June 2023.
+
+\bibitem[Stoica et~al.(2024)Stoica, Bolya, Bjorner, Ramesh, Hearn, and
+  Hoffman]{stoica2024zipitmergingmodelsdifferent}
+G.~Stoica, D.~Bolya, J.~Bjorner, P.~Ramesh, T.~Hearn, and J.~Hoffman.
+\newblock Zipit! merging models from different tasks without training, 2024.
+\newblock URL \url{https://arxiv.org/abs/2305.03053}.
+
+\bibitem[Sun et~al.(2023)Sun, Liu, Bair, and Kolter]{wanda}
+M.~Sun, Z.~Liu, A.~Bair, and J.~Z. Kolter.
+\newblock A simple and effective pruning approach for large language models.
+\newblock \emph{arXiv preprint arXiv:2306.11695}, 2023.
+\newblock URL \url{https://arxiv.org/abs/2306.11695}.
+
+\bibitem[Theus et~al.(2024)Theus, Geimer, Wicke, Hofmann, Anagnostidis, and
+  Singh]{theus2024metapruning}
+A.~Theus, O.~Geimer, F.~Wicke, T.~Hofmann, S.~Anagnostidis, and S.~P. Singh.
+\newblock Towards meta-pruning via optimal transport.
+\newblock \emph{arXiv preprint arXiv:2402.07839}, 2024.
+\newblock URL \url{https://arxiv.org/abs/2402.07839}.
+
+\bibitem[Touvron et~al.(2023{\natexlab{a}})Touvron, Lavril, Izacard, Martinet,
+  Lachaux, Lacroix, Rozière, Goyal, Hambro, Azhar, Rodriguez, Joulin, Grave,
+  and Lample]{llama}
+H.~Touvron, T.~Lavril, G.~Izacard, X.~Martinet, M.-A. Lachaux, T.~Lacroix,
+  B.~Rozière, N.~Goyal, E.~Hambro, F.~Azhar, A.~Rodriguez, A.~Joulin,
+  E.~Grave, and G.~Lample.
+\newblock Llama: Open and efficient foundation language models,
+  2023{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/2302.13971}.
+
+\bibitem[Touvron et~al.(2023{\natexlab{b}})Touvron, Martin, Stone, Albert,
+  Almahairi, Babaei, Bashlykov, Batra, Bhargava, Bhosale, Bikel, Blecher,
+  Ferrer, Chen, Cucurull, Esiobu, Fernandes, Fu, Fu, Fuller, Gao, Goswami,
+  Goyal, Hartshorn, Hosseini, Hou, Inan, Kardas, Kerkez, Khabsa, Kloumann,
+  Korenev, Koura, Lachaux, Lavril, Lee, Liskovich, Lu, Mao, Martinet, Mihaylov,
+  Mishra, Molybog, Nie, Poulton, Reizenstein, Rungta, Saladi, Schelten, Silva,
+  Smith, Subramanian, Tan, Tang, Taylor, Williams, Kuan, Xu, Yan, Zarov, Zhang,
+  Fan, Kambadur, Narang, Rodriguez, Stojnic, Edunov, and Scialom]{llama2}
+H.~Touvron, L.~Martin, K.~Stone, P.~Albert, A.~Almahairi, Y.~Babaei,
+  N.~Bashlykov, S.~Batra, P.~Bhargava, S.~Bhosale, D.~Bikel, L.~Blecher, C.~C.
+  Ferrer, M.~Chen, G.~Cucurull, D.~Esiobu, J.~Fernandes, J.~Fu, W.~Fu,
+  B.~Fuller, C.~Gao, V.~Goswami, N.~Goyal, A.~Hartshorn, S.~Hosseini, R.~Hou,
+  H.~Inan, M.~Kardas, V.~Kerkez, M.~Khabsa, I.~Kloumann, A.~Korenev, P.~S.
+  Koura, M.-A. Lachaux, T.~Lavril, J.~Lee, D.~Liskovich, Y.~Lu, Y.~Mao,
+  X.~Martinet, T.~Mihaylov, P.~Mishra, I.~Molybog, Y.~Nie, A.~Poulton,
+  J.~Reizenstein, R.~Rungta, K.~Saladi, A.~Schelten, R.~Silva, E.~M. Smith,
+  R.~Subramanian, X.~E. Tan, B.~Tang, R.~Taylor, A.~Williams, J.~X. Kuan,
+  P.~Xu, Z.~Yan, I.~Zarov, Y.~Zhang, A.~Fan, M.~Kambadur, S.~Narang,
+  A.~Rodriguez, R.~Stojnic, S.~Edunov, and T.~Scialom.
+\newblock Llama 2: Open foundation and fine-tuned chat models,
+  2023{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2307.09288}.
+
+\bibitem[Wan et~al.(2020)Wan, Qi, Xu, Tong, and Gu]{wan2020deep}
+S.~Wan, L.~Qi, X.~Xu, C.~Tong, and Z.~Gu.
+\newblock Deep learning models for real-time human activity recognition with
+  smartphones.
+\newblock \emph{Mobile Networks and Applications}, 25\penalty0 (2):\penalty0
+  743--755, 2020.
+
+\bibitem[Wang et~al.(2024)Wang, Saukh, He, and
+  Thiele]{wang2024subspaceconfigurablenetworks}
+D.~Wang, O.~Saukh, X.~He, and L.~Thiele.
+\newblock Subspace-configurable networks, 2024.
+\newblock URL \url{https://arxiv.org/abs/2305.13536}.
+
+\bibitem[Wang et~al.(2020)Wang, Xu, Wu, Liu, Liu, and Wang]{wang2020sparse}
+Z.~Wang, K.~Xu, S.~Wu, L.~Liu, L.~Liu, and D.~Wang.
+\newblock Sparse-yolo: Hardware/software co-design of an fpga accelerator for
+  yolov2.
+\newblock \emph{IEEE Access}, 8:\penalty0 116569--116585, 2020.
+
+\bibitem[Wen et~al.(2016)Wen, Wu, Wang, Chen, and Li]{wen2016learning}
+W.~Wen, C.~Wu, Y.~Wang, Y.~Chen, and H.~Li.
+\newblock Learning structured sparsity in deep neural networks.
+\newblock \emph{Advances in neural information processing systems}, 29, 2016.
+
+\bibitem[Wortsman et~al.(2022)Wortsman, Ilharco, Gadre, Roelofs, Gontijo-Lopes,
+  Morcos, Namkoong, Farhadi, Carmon, Kornblith, and Schmidt]{wortsman2022model}
+M.~Wortsman, G.~Ilharco, S.~Y. Gadre, R.~Roelofs, R.~Gontijo-Lopes, A.~S.
+  Morcos, H.~Namkoong, A.~Farhadi, Y.~Carmon, S.~Kornblith, and L.~Schmidt.
+\newblock Model soups: averaging weights of multiple fine-tuned models improves
+  accuracy without increasing inference time, 2022.
+\newblock URL \url{https://arxiv.org/abs/2203.05482}.
+
+\bibitem[Yamada et~al.(2023)Yamada, Yamashita, Yamaguchi, and
+  Chijiwa]{yamada2023revisitingpermutationsymmetrymerging}
+M.~Yamada, T.~Yamashita, S.~Yamaguchi, and D.~Chijiwa.
+\newblock Revisiting permutation symmetry for merging models between different
+  datasets, 2023.
+\newblock URL \url{https://arxiv.org/abs/2306.05641}.
+
+\bibitem[Yin et~al.(2020)Yin, Molchanov, Li, Alvarez, Mallya, Hoiem, Jha, and
+  Kautz]{yin2020dreamingdistilldatafreeknowledge}
+H.~Yin, P.~Molchanov, Z.~Li, J.~M. Alvarez, A.~Mallya, D.~Hoiem, N.~K. Jha, and
+  J.~Kautz.
+\newblock Dreaming to distill: Data-free knowledge transfer via deepinversion,
+  2020.
+\newblock URL \url{https://arxiv.org/abs/1912.08795}.
+
+\bibitem[Yin et~al.(2022)Yin, Li, Tan, Bao, Liang, and
+  Liu]{yin2022exploringstructuralsparsityneural}
+S.~Yin, C.~Li, W.~Tan, Y.~Bao, Y.~Liang, and W.~Liu.
+\newblock Exploring structural sparsity in neural image compression, 2022.
+\newblock URL \url{https://arxiv.org/abs/2202.04595}.
+
+\bibitem[Yu et~al.(2023)Yu, Chen, Han, and Jiang]{yu2023data}
+S.~Yu, J.~Chen, H.~Han, and S.~Jiang.
+\newblock Data-free knowledge distillation via feature exchange and activation
+  region constraint.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}, pages 24266--24275, 2023.
+
+\bibitem[Zhou et~al.(2017)Zhou, Yao, Guo, Xu, and Chen]{zhou2017incremental}
+A.~Zhou, A.~Yao, Y.~Guo, L.~Xu, and Y.~Chen.
+\newblock Incremental network quantization: Towards lossless cnns with
+  low-precision weights.
+\newblock \emph{arXiv preprint arXiv:1702.03044}, 2017.
+\newblock URL \url{https://arxiv.org/abs/1702.03044}.
+
+\end{thebibliography}

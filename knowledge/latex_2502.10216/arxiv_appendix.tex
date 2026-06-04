@@ -1,0 +1,1132 @@
+%!TEX root = arxiv.tex
+The following sections provide supplementary information omitted from the main text:
+\begin{itemize}
+    \item Section~\ref{appx:implementation}: Implementation Details.
+    \item Section~\ref{appx:theory}: Further Theoretical Results to Support Model Folding.
+    % \item Section~\ref{appx:wm_vs_folding}: Relationship Between Weight Matching and Model Folding.
+    \item Section~\ref{appx:sec:channel_similarity}: Channel Similarity.
+    \item Section~\ref{appx:llms}: Model Folding on LLMs.
+    \item Section~\ref{appx:residual}: Handling Residual Blocks.
+    \item Section~\ref{appx:bn}: Handling Batch Normalization Layers.
+    \item Section~\ref{appx:similar_in_mlps}: Folding Similar Channels in MLPs.
+    \item Section~\ref{appx:similar_in_cnn}: Folding Similar Channels in Convolutional Layers.
+    \item Section~\ref{appx:similar_in_llama}: Folding Similar Channels in LlamaMLP and LlamaAttention.
+    \item Section~\ref{appx:kd}: Comparison with Knowledge Distillation.
+    \item Section~\ref{appx:devices}: Inference Speed of Folded Models on Edge Devices.
+    \item Section~\ref{appx:dee_inversion}: Deep Inversion Sample Images.
+    \item Section~\ref{appx:related}: Further Related Work.
+\end{itemize}
+
+\section{Implementation details}
+\label{appx:implementation}
+
+We trained over 100 models on a NVIDIA DGX Station A100 featuring eight NVIDIA A100 GPUs (each equipped with 80GB memory) to evaluate the performance of model folding presented in this work. For a folding experiment, we apply the same compression ratio to all layers. \texttt{Pytorch Hub}\footnote{https://pytorch.org/hub/} and \texttt{Huggingface Hub}\footnote{https://huggingface.co/docs/hub/index} are used to load pre-trained checkpoints for complex model-dataset combinations, including ResNet18/ResNet50/VGG11 on ImageNet and LLaMA-7B~\citep{llama}. WandB\footnote{https://wandb.ai} is used to log training history, folding result, and evaluation metrics. The source code of all experiments is available here: \url{https://github.com/nanguoyu/model-folding-universal}
+% https://anonymous.4open.science/r/model_folding_anonymous-94F8/
+
+
+
+\section{Further theoretical results to support model folding}
+\label{appx:theory}
+
+\begin{lemma}\label{lemma1}
+Let $\mathbf{x} \in \mathbb{R}^{k}$ and let $\mathbf{U} \in \{0, 1\}^{n \times k}$ be a binary clustering matrix with $\sum_{j} u_{ij} = 1$. Then with any element-wise nonlinear function $\sigma(\cdot)$ we have
+\[
+    \sigma(\mathbf{U} \mathbf{x}) = \mathbf{U}\sigma( \mathbf{x})
+\]
+\end{lemma} 
+\begin{proof}[Proof of Lemma \ref{lemma1}]
+Define $\mathbf{y} = \mathbf{U} \mathbf{x}$, $\mathbf{z} = \sigma( \mathbf{U} \mathbf{x})$  and $\mathbf{v} = \sigma( \mathbf{x})$, $\mathbf{w} = \mathbf{U}\sigma( \mathbf{x})$. Note that in any row of $\mathbf{U}$ just one element satisfies $u_{i j} = 1$. We define such an element by a function $p$ with $u_{i j} = 1 \Leftrightarrow p(i) = j$. 
+
+Therefore, $\mathbf{y}_i = \mathbf{x}_{p(i)}$ and $\mathbf{z}_i = \sigma(\mathbf{y}_i) = \sigma(\mathbf{x}_{p(i)})$ for all $1 \leq i \leq n$. Moreover, $\mathbf{v}_i = \sigma(\mathbf{x}_{i})$ and $\mathbf{w}_i = \mathbf{v}_{p(i)} = \sigma(\mathbf{x}_{p(i)})$. Therefore, $\mathbf{z}_i = \mathbf{w}_i$ and $\mathbf{z} = \mathbf{w}$. 
+
+\iffalse
+    If $\mathbf{U}^T$ is a clustering matrix then for ever every row $\mathbf{q}_k^T$ of $\mathbf{U}$ we have: 
+    \[
+        \mathbf{q}^{(i)}_{k} = \begin{cases} 
+            1 & i = p(k) \\
+            0 & else
+   \end{cases}
+    \]
+    where $p(k)$ is some function $p: \{1, 2, \hdots, n\} \mapsto \{1, 2, \hdots, d\}$. From the previous property it holds:
+    \[
+        (\mathbf{q}_k)^T \sigma(\mathbf{x}) = \sigma(\mathbf{x})^{(p(k)))} = \sigma(\mathbf{x}^{(p(k)))})
+    \]
+    Because $\mathbf{U}^T$ is a clustering matrix, we also have
+    \[
+        (\mathbf{q}_k)^T \mathbf{x} = \mathbf{x}^{(p(k))} 
+    \]
+    and consequently
+    \[
+        \sigma(\mathbf{q}_k^T \mathbf{x}) = \sigma(\mathbf{x}^{(p(k))} ) = \mathbf{q}_k^T \sigma(\mathbf{x})
+    \]
+\fi
+\end{proof}
+
+\begin{lemma}\label{lemma4}
+Let $\mathbf{x} \in \mathbb{R}^{k}$, let $\mathbf{U} \in \{0, 1\}^{n \times k}$ be a binary clustering matrix with $\sum_{j} u_{ij} = 1$, let $\sigma(\cdot)$ be an element-wise nonlinear function, and define $\mathbf{C} = \mathbf{U} (\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T$. Then
+\[
+    \sigma(\mathbf{C} \mathbf{x}) = \mathbf{C}^T \sigma( \mathbf{C} \mathbf{x})
+\]
+\end{lemma} 
+\begin{proof}[Proof of Lemma \ref{lemma4}]
+We can write 
+\begin{align*}
+    \sigma(\mathbf{C} \mathbf{x}) &= \sigma(\mathbf{U} (\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \mathbf{x}) \\
+    &= \mathbf{U} \sigma((\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \mathbf{x}) \qquad \text{(Lemma \ref{lemma1})}\\
+    &= \mathbf{U} (\mathbf{U}^T \mathbf{U})^{-1} (\mathbf{U}^T \mathbf{U})  \sigma((\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \mathbf{x}) \\
+    &= \mathbf{U} (\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \sigma(\mathbf{U} (\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \mathbf{x}) \qquad \text{(Lemma \ref{lemma1})}\\
+    &= \mathbf{C}^T \sigma( \mathbf{C} \mathbf{x}).
+\end{align*}
+\end{proof}
+
+\begin{lemma}\label{diag_u}
+Let $\mathbf{U}^T$ be a clustering matrix and let $\mathbf{D}$ be a diagonal matrix, then the following is true
+\begin{align*}
+    (\mathbf{U}^T\mathbf{U})^{-1}\mathbf{U}^T\mathbf{D}\mathbf{U} = \text{Diag}((\mathbf{U}^T\mathbf{U})^{-1}\mathbf{U}^T\text{diag}(\mathbf{D}))
+\end{align*}
+\end{lemma}
+\begin{proof}[Proof of Theorem \ref{diag_u}]
+
+The clustering matrix \( \mathbf{U}^T \) can be expressed as:
+\[
+\mathbf{U}^T = 
+\begin{bmatrix}
+    \mathbf{u}_1^T \\
+    \mathbf{u}_2^T \\
+    \vdots \\
+    \mathbf{u}_k^T
+\end{bmatrix}
+=
+\begin{bmatrix}
+    u_{11} & u_{12} & \dots & u_{1n} \\
+    u_{21} & u_{22} & \dots & u_{2n} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    u_{k1} & u_{k2} & \dots & u_{kn}
+\end{bmatrix},
+\]
+where \( \mathbf{u}_i^T \) represents the rows of the clustering matrix. Each row corresponds to cluster \( i \), and the entries \( u_{ij} \) satisfy the binary clustering property: \( u_{ij} = 1 \) if the \( j \)-th data point belongs to cluster \( i \), and \( u_{ij} = 0 \) otherwise.
+
+The product \( \mathbf{D} \mathbf{U} \) is given by:
+\[
+\mathbf{D} \mathbf{U} = 
+\begin{bmatrix}
+    d_1 & 0 & \dots & 0 \\
+    0 & d_2 & \dots & 0 \\
+    \vdots & \vdots & \ddots & \vdots \\
+    0 & 0 & \dots & d_n
+\end{bmatrix}
+\begin{bmatrix}
+    u_{11} & u_{12} & \dots & u_{1k} \\
+    u_{21} & u_{22} & \dots & u_{2k} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    u_{n1} & u_{n2} & \dots & u_{nk}
+\end{bmatrix}.
+\]
+This simplifies to:
+\[
+\mathbf{D} \mathbf{U} = 
+\begin{bmatrix}
+    d_1 u_{11} & d_1 u_{12} & \dots & d_1 u_{1k} \\
+    d_2 u_{21} & d_2 u_{22} & \dots & d_2 u_{2k} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    d_n u_{n1} & d_n u_{n2} & \dots & d_n u_{nk}
+\end{bmatrix}.
+\]
+
+Using the clustering property of \( \mathbf{U} \), it follows that:
+\[
+u_{ij} u_{i'j} =
+\begin{cases}
+1, & \text{if } i = i', \\
+0, & \text{otherwise}.
+\end{cases}
+\]
+
+From this, the product \( \mathbf{U}^T \mathbf{D} \mathbf{U} \) simplifies to:
+\[
+\mathbf{U}^T \mathbf{D} \mathbf{U} = \text{Diag}(\mathbf{U}^T \text{diag}(\mathbf{D})).
+\]
+This result holds because only the diagonal entries remain due to the clustering matrix's orthogonality and binary properties.
+
+Finally, using the above result, we compute:
+\[
+(\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \mathbf{D} \mathbf{U} = (\mathbf{U}^T \mathbf{U})^{-1} \text{Diag}(\mathbf{U}^T \text{diag}(\mathbf{D})).
+\]
+
+By the property \( \text{diag}(\text{Diag}(\mathbf{x})) = \mathbf{x} \) for any \( \mathbf{x} \in \mathbb{R}^n \), we obtain:
+\[
+(\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \mathbf{D} \mathbf{U} = \text{Diag}((\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \text{diag}(\mathbf{D})).
+\]
+
+The lemma demonstrates that projecting the diagonal matrix \( \mathbf{D} \) through the clustering matrix \( \mathbf{U}^T \) preserves its diagonal structure. The diagonal entries are determined by the clustering matrix's mapping of the original diagonal values \( \text{diag}(\mathbf{D}) \), ensuring efficient computation and alignment with clustering properties.
+\end{proof}
+
+
+
+
+\begin{lemma}\label{diag-map}
+Let $\mathbf{U}^T$ be a clustering matrix and let $\mathbf{w} \in \mathbb{R}^n$ and $\mathbf{x} \in \mathbb{R}^n$, then the following is true
+\begin{align*}
+    \mathbf{U} \text{Diag}(\mathbf{w}) \mathbf{x} = \text{Diag}(\mathbf{U}\mathbf{w}) \mathbf{U }\mathbf{x}
+\end{align*}
+\end{lemma}
+\begin{proof}[Proof of Lemma \ref{diag-map}]
+The clustering matrix \( \mathbf{U} \) can be expressed as:
+\[
+\mathbf{U} =
+\begin{bmatrix}
+    \mathbf{v}_1^T \\
+    \mathbf{v}_2^T \\
+    \vdots \\
+    \mathbf{v}_n^T
+\end{bmatrix},
+\]
+where each row \( \mathbf{v}_m^T \) is defined by a mapping function \( f: \{1, 2, \dots, n\} \to \{1, 2, \dots, k\} \). For each row \( \mathbf{v}_m^T \), the entries are defined as:
+\[
+v_{m,j} =
+\begin{cases}
+1, & \text{if } j = f(m), \\
+0, & \text{otherwise}.
+\end{cases}
+\]
+This representation indicates that the clustering matrix \( \mathbf{U} \) assigns each element \( m \) to a specific cluster \( f(m) \). Each row \( \mathbf{v}_m^T \) has a single non-zero element corresponding to the cluster index \( f(m) \).
+
+\paragraph{Calculation of the Left-Hand Side (LHS).}
+The left-hand side of the equality is:
+\[
+\mathbf{U}\text{Diag}(\mathbf{w})\mathbf{x}.
+\]
+First, compute \( Diag(\mathbf{w})\mathbf{x} \), which scales each element of \( \mathbf{x} \) by the corresponding element of \( \mathbf{w} \):
+\[
+\text{Diag}(\mathbf{w})\mathbf{x} =
+\begin{bmatrix}
+    w_1 x_1 \\
+    w_2 x_2 \\
+    \vdots \\
+    w_n x_n
+\end{bmatrix}.
+\]
+Then, multiplying by \( \mathbf{U} \) aggregates these scaled values according to the clusters defined by \( f \). Specifically, the \( j \)-th element of \( \mathbf{U}\text{Diag}(\mathbf{w})\mathbf{x} \) is given by:
+\[
+(\mathbf{U}\text{Diag}(\mathbf{w})\mathbf{x})_j = \sum_{m: f(m) = j} w_m x_m.
+\]
+
+\paragraph{Calculation of the Right-Hand Side (RHS).}
+The right-hand side of the equality is:
+\[
+\text{Diag}(\mathbf{U}\mathbf{w})\mathbf{U}\mathbf{x}.
+\]
+First, compute \( \mathbf{U}\mathbf{w} \). The \( j \)-th element of \( \mathbf{U}\mathbf{w} \) is:
+\[
+(\mathbf{U}\mathbf{w})_j = \sum_{m: f(m) = j} w_m,
+\]
+which sums the \( w_m \) values for all elements assigned to cluster \( j \).
+
+Next, construct \( \text{Diag}(\mathbf{U}\mathbf{w}) \), a diagonal matrix with entries \( (\mathbf{U}\mathbf{w})_j \) along the diagonal:
+\[
+\text{Diag}(\mathbf{U}\mathbf{w}) =
+\begin{bmatrix}
+    (\mathbf{U}\mathbf{w})_1 & 0 & \dots & 0 \\
+    0 & (\mathbf{U}\mathbf{w})_2 & \dots & 0 \\
+    \vdots & \vdots & \ddots & \vdots \\
+    0 & 0 & \dots & (\mathbf{U}\mathbf{w})_k
+\end{bmatrix}.
+\]
+
+Finally, compute \( \mathbf{U}\mathbf{x} \). The \( j \)-th element of \( \mathbf{U}\mathbf{x} \) is:
+\[
+(\mathbf{U}\mathbf{x})_j = \sum_{m: f(m) = j} x_m,
+\]
+which sums the \( x_m \) values for all elements assigned to cluster \( j \).
+
+Multiplying \( \text{Diag}(\mathbf{U}\mathbf{w}) \) by \( \mathbf{U}\mathbf{x} \) gives:
+\[
+\left(\text{Diag}(\mathbf{U}\mathbf{w})\mathbf{U}\mathbf{x}\right)_j = (\mathbf{U}\mathbf{w})_j (\mathbf{U}\mathbf{x})_j = \left(\sum_{m: f(m) = j} w_m\right)\left(\sum_{m: f(m) = j} x_m\right).
+\]
+
+\paragraph{Verification of Equality.}
+Both the LHS and RHS compute the same aggregated sums \( \sum_{m: f(m) = j} w_m x_m \) for each cluster \( j \). The LHS directly performs the aggregation of \( w_m x_m \) within clusters, while the RHS separates the computation into two steps: summing \( w_m \) and \( x_m \) for each cluster, followed by multiplying these sums. Since multiplication distributes over addition, the two expressions are equivalent:
+\[
+\mathbf{U}\text{Diag}(\mathbf{w})\mathbf{x} = \text{Diag}(\mathbf{U}\mathbf{w})\mathbf{U}\mathbf{x}.
+\]
+
+The lemma is proven, as both sides of the equation compute the same weighted aggregation of \( w_m x_m \) over the clusters defined by the clustering matrix \( \mathbf{U} \).
+\end{proof}
+
+
+
+
+\begin{lemma}\label{diag_norm}
+    Let $\mathbf{C}^T$ be a clustering matrix and let $\mathbf{D}$ be a diagonal matrix, then the following is true
+    \begin{align*}
+        \|\mathbf{W} - \text{Diag}(\mathbf{C}\text{diag}(\mathbf{W}))\|_F^2 = 
+        \|\text{diag}(\mathbf{W}) - \mathbf{C}\text{diag}(\mathbf{W})\|_2^2
+    \end{align*}
+\end{lemma}
+\begin{proof}[Proof of Lemma \ref{diag_norm}]
+Let \( \mathbf{\tilde{W}} = \text{Diag}(\mathbf{C}\text{diag}(\mathbf{W})) \), where \( \mathbf{\tilde{W}} \) represents the diagonal matrix obtained by clustering the diagonal entries of \( \mathbf{W} \) using the clustering matrix \( \mathbf{C} \). Both \( \mathbf{W} \) and \( \mathbf{\tilde{W}} \) are diagonal matrices, so their difference \( \mathbf{W} - \mathbf{\tilde{W}} \) is also diagonal. The entries of this difference are:
+\[
+w_{i,j} - \tilde{w}_{i,j} =
+\begin{cases}
+w_{i,i} - \tilde{w}_{i,i}, & \text{if } i = j, \\
+0, & \text{otherwise}.
+\end{cases}
+\]
+The Frobenius norm of the difference \( \mathbf{W} - \mathbf{\tilde{W}} \) is:
+\[
+\|\mathbf{W} - \mathbf{\tilde{W}}\|_F^2 = \sum_{i,j} (w_{i,j} - \tilde{w}_{i,j})^2.
+\]
+Since \( \mathbf{W} \) and \( \mathbf{\tilde{W}} \) are diagonal matrices, this simplifies to:
+\[
+\|\mathbf{W} - \mathbf{\tilde{W}}\|_F^2 = \sum_{i} (w_{i,i} - \tilde{w}_{i,i})^2.
+\]
+The diagonal entries of \( \mathbf{W} \) can be represented as a vector \( \text{diag}(\mathbf{W}) \), and the diagonal entries of \( \mathbf{\tilde{W}} \) are given by \( \mathbf{C}\text{diag}(\mathbf{W}) \). Substituting these representations, we have:
+\[
+\|\mathbf{W} - \mathbf{\tilde{W}}\|_F^2 = \sum_{i} (\text{diag}(\mathbf{W})_i - (\mathbf{C}\text{diag}(\mathbf{W}))_i)^2.
+\]
+This is equivalent to the squared \( \ell_2 \)-norm of the difference between the vectors \( \text{diag}(\mathbf{W}) \) and \( \mathbf{C}\text{diag}(\mathbf{W}) \), giving:
+\[
+\|\mathbf{W} - \mathbf{\tilde{W}}\|_F^2 = \|\text{diag}(\mathbf{W}) - \mathbf{C}\text{diag}(\mathbf{W})\|_2^2.
+\]
+Substituting back \( \mathbf{\tilde{W}} = \text{Diag}(\mathbf{C}\text{diag}(\mathbf{W})) \), we conclude that:
+\[
+\|\mathbf{W} - \text{Diag}(\mathbf{C}\text{diag}(\mathbf{W}))\|_F^2 = \|\text{diag}(\mathbf{W}) - \mathbf{C}\text{diag}(\mathbf{W})\|_2^2.
+\]
+\end{proof}
+
+
+
+
+\begin{lemma}\label{diag-aux}
+    Let $\mathbf{A} \in \mathbb{R}^{n \times n}$ and $\mathbf{B} \in \mathbb{R}^{n \times n}$ be diagonal matrices, then:
+    \begin{align*}
+        \mathbf{A} {\mathbf{B}} = \text{Diag}(\mathbf{A}\text{diag}(\mathbf{B}))
+    \end{align*}
+\end{lemma}
+\begin{proof}[Proof of Lemma \ref{diag-aux}]
+Since both \( \mathbf{A} \) and \( \mathbf{B} \) are diagonal matrices, their product \( \mathbf{A}\mathbf{B} \) is also a diagonal matrix. The entries of the product \( \mathbf{A}\mathbf{B} \) are given by:
+\[
+(\mathbf{A}\mathbf{B})_{i,j} = a_{i,j} b_{i,j}.
+\]
+For diagonal matrices, all off-diagonal entries are zero, so:
+\[
+(\mathbf{A}\mathbf{B})_{i,j} =
+\begin{cases}
+a_{i,i} b_{i,i}, & \text{if } i = j, \\
+0, & \text{otherwise}.
+\end{cases}
+\]
+Thus, the diagonal entries of \( \mathbf{A}\mathbf{B} \) are \( a_{i,i} b_{i,i} \), and the matrix \( \mathbf{A}\mathbf{B} \) is:
+\[
+\mathbf{A}\mathbf{B} =
+\begin{bmatrix}
+a_1 b_1 & 0 & \dots & 0 \\
+0 & a_2 b_2 & \dots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+0 & 0 & \dots & a_n b_n
+\end{bmatrix},
+\]
+where \( a_i = a_{i,i} \) and \( b_i = b_{i,i} \) represent the diagonal entries of \( \mathbf{A} \) and \( \mathbf{B} \), respectively.
+
+Now, let \( \text{diag}(\mathbf{B}) \) denote the vector of diagonal entries of \( \mathbf{B} \), i.e.,
+\[
+\text{diag}(\mathbf{B}) = \begin{bmatrix} b_1 \\ b_2 \\ \vdots \\ b_n \end{bmatrix}.
+\]
+The operation \( \mathbf{A}\text{diag}(\mathbf{B}) \) represents the element-wise multiplication of the diagonal entries of \( \mathbf{A} \) and \( \mathbf{B} \):
+\[
+\mathbf{A}\text{diag}(\mathbf{B}) = \begin{bmatrix} a_1 b_1 \\ a_2 b_2 \\ \vdots \\ a_n b_n \end{bmatrix}.
+\]
+
+Next, using the function \( \text{Diag}(\cdot) \), we can construct a diagonal matrix from this vector:
+\[
+\text{Diag}(\mathbf{A}\text{diag}(\mathbf{B})) =
+\begin{bmatrix}
+a_1 b_1 & 0 & \dots & 0 \\
+0 & a_2 b_2 & \dots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+0 & 0 & \dots & a_n b_n
+\end{bmatrix}.
+\]
+
+Clearly, \( \mathbf{A}\mathbf{B} \) and \( \text{Diag}(\mathbf{A}\text{diag}(\mathbf{B})) \) are identical, as they both produce the same diagonal matrix with entries \( a_i b_i \) along the diagonal. Therefore:
+\[
+\mathbf{A}\mathbf{B} = \text{Diag}(\mathbf{A}\text{diag}(\mathbf{B})).
+\]
+\end{proof}
+
+
+% \begin{definition}[Variance ratio]
+%     Consider a neural network $f(\mathbf{x}, \mathbf{\Theta})$ with layer activations $\{\mathbf{x}_l\}_1^L$ and a compressed neural network $\tilde{f}(\mathbf{x}, \mathbf{\Theta})$ with activations $\{\tilde{\mathbf{x}}_l\}_1^L$ . Let the activation of the $l$-th layer of the original network be
+%     $\mathbf{x}_l = \sigma(g(\mathbf{x}_{l-1}))$.
+%     The activations of the compressed layer $l$ with the clustering matrix $\mathbf{U}_l$ and $\mathbf{C}_l = \mathbf{U}_l (\mathbf{U}_l^T\mathbf{U}_l)^{-1} \mathbf{U}_l^T$ are 
+%     \[
+%             \tilde{\mathbf{x}}_l = \mathbf{C}_l^T \sigma(\mathbf{C}_l g(\tilde{\mathbf{x}}_{l-1})).
+%     \]
+%     The \emph{variance ratio} of the $l$-th layer is defined as:
+%     \[
+%     \mu\left[\frac{\Var(\tilde{\mathbf{x}}_l)}{\Var(\mathbf{x}_l)}\right] = \frac{1}{|\mathbf{x}_l|} \sum_{k = 1}^{|\mathbf{x}_l|}\frac{\Var(\tilde{\mathbf{x}}_{l,k})}{\Var(\mathbf{x}_{l,k})}.
+%     \]
+% \end{definition}
+
+
+% \begin{definition}[Variance collapse]
+%     Consider a neural network $f(\mathbf{x}, \mathbf{\Theta})$ with layer activations $\{\mathbf{x}_l\}_1^L$ and a compressed neural network $\tilde{f}(\mathbf{x}, \mathbf{\Theta})$ with activations $\{\tilde{\mathbf{x}}_l\}_1^L$. 
+%     The \emph{variance collapse} is observed if for every $l \in \{2, \hdots, L\}$ the following holds:
+%     \[
+%         \mu\left[\frac{\Var(\tilde{\mathbf{x}}_l)}{\Var(\mathbf{x}_l)}\right] \leq \mu \left[\frac{\Var(\tilde{\mathbf{x}}_{l-1})}{\Var(\mathbf{x}_{l-1})}\right].
+%     \].
+% \end{definition}
+
+% \lothar{We may not need the following Lemmata. Please check.}
+
+% \begin{lemma}\label{lemma2}
+% Let $\mathbf{x} \in \mathbb{R}^{d}$   and let $\mathbf{D}$ be a diagonal $d \times d$ matrix. Then
+% \begin{align*}
+%     \sigma(\mathbf{D} \mathbf{x}) = \mathbf{D}\sigma( \mathbf{x})
+% \end{align*}
+% \end{lemma} 
+% \begin{proof}[Proof of Lemma \ref{lemma2}]
+%     If $\mathbf{D}$ is a diagonal matrix then for every row $\mathbf{d}_k^T$ of $\mathbf{D}$ we have :
+%     \begin{align*}
+%         \mathbf{d}^{(i)}_{k} = \begin{cases} 
+%             \alpha_k & i = k \\
+%             0 & else
+%    \end{cases}
+%     \end{align*}
+%     Therefore, the following holds:
+%     \begin{align*}
+%         (\mathbf{d}_k)^T \sigma(\mathbf{x}) = \alpha_k\sigma(\mathbf{x})^{(k)} = \sigma(\alpha_k\mathbf{x}^{(k)}).
+%     \end{align*}
+%     Because $\mathbf{D}$ is a diagonal matrix, we also have:
+%     \begin{align*}
+%         (\mathbf{d}_k)^T \mathbf{x} = \alpha_k\mathbf{x}^{(k)} 
+%     \end{align*}
+%     and consequently:
+%     \begin{align*}
+%         \sigma(\mathbf{d}_k^T \mathbf{x}) = \sigma(\alpha_k\mathbf{x}^{(k)}) = \mathbf{d}_k^T \sigma(\mathbf{x})
+%     \end{align*}
+% \end{proof}
+
+% \begin{lemma}\label{lemma3}
+% Let $\mathbf{U}^T$ be a binary indicator matrix. Then the product $\mathbf{U}^T \mathbf{U}$ is a diagonal matrix.
+% \end{lemma} 
+% \begin{proof}[Proof of Lemma \ref{lemma1}]
+% \haris{TODO: Finish Proof} \\
+% If $\mathbf{U}^T$ is a binary indicator matrix then for ever every row $\mathbf{q}_k$ of $\mathbf{U}$ we have 
+%     \begin{align*}
+%         \mathbf{q}^{(i)}_{k} = \begin{cases} 
+%             1 & i = p_k \\
+%             0 & else
+%         \end{cases}
+%     \end{align*}
+%     Therefore it holds
+    
+% \end{proof}
+
+
+
+
+% \section{Further empirical results}
+
+% \olga{Do we need this section?}
+
+% \begin{table}[h]
+% \centering
+% \small{
+% \begin{tabular}{l|c|c|c|c|c|c}
+% \toprule
+% Model    & Dataset  & Full Model & Parameter & Model & L$_1$ pruning & L$_2$ pruning \\ 
+%         &           & Performance  & Sparsity & Folding & [\%] &    [\%] \\
+%         &           & [\%]  & [\%] & [\%] &  &    \\
+% \midrule
+% VGG11-BN & CIFAR10  & \textbf{91.42} & 74.98 & 21.86/\textbf{75.76} & 10.0/38.81 & 11.71/35.02 \\ 
+% ResNet18 & CIFAR10  & \textbf{94.59} & 74.96 & 17.79/\textbf{81.31} & 11.04/37.57 & 10.0/37.53 \\ 
+% ResNet50 & CIFAR10  & \textbf{94.33} & 74.92 & 10.85/\textbf{88.65} & 18.53/48.07 & 24.49/48.77 \\ 
+% VGG11-BN & CIFAR100 & \textbf{65.53} & 70.11 & 3.91/\textbf{21.72}  & 1.0/10.11 & 1.24/10.59 \\ 
+% ResNet18 & CIFAR100 & \textbf{75.21} & 74.86 & 2.4/\textbf{30.27}   & 1.0/10.11  & 1.24/10.59 \\ 
+% ResNet50 & CIFAR100 & \textbf{77.26} & 74.73 & 1.83/\textbf{48.51}  & 1.94/19.28 & 1.95/20.75 \\ 
+% VGG11-BN & ImageNet & \textbf{70.37} & 71.63 & 0.2/\textbf{3.6}               & 0.1/0.1    & 0.1/0.1    \\ 
+% ResNet18 & ImageNet & \textbf{69.76} & 71.17 & 0.1/\textbf{0.6}               & 0.1/0.1    & 0.1/0.1    \\ 
+% \bottomrule
+% \end{tabular}
+% }
+% \caption{\textbf{Dong -- Performance of model folding at maximal sparsity,} demonstrating the effects of model folding, L$_1$ structured pruning, and L$_2$ structured pruning at maximal sparsity. For model folding, L$_1$ pruning, and L$_2$ pruning results are presented as without REPAIR and with REPAIR. \olga{Update. 75\%?}}
+% \label{table:max_pruning_results}
+% \end{table}
+
+
+% A number of results for folding using clustering and REPAIR are given in table \ref{appx:tb:performance}.
+
+% \begin{table}[h]
+% \centering
+% \small{
+% \begin{tabular}{l|c|c|c|c|c|c}
+% \toprule
+% Model    & Dataset  & Full Model & Parameter & Model & L$_1$ pruning & L$_2$ pruning \\ 
+%         &           & Performance  & Sparsity & Folding & [\%] &    [\%] \\
+%         &           & [\%]  & [\%] & [\%] &  &    \\
+% \midrule
+% VGG11-BN & CIFAR10  & \textbf{94.59} & 74.98 & 17.79/\textbf{77.48} & 11.04/37.57 & 10.0/37.53 \\
+% ResNet18 & CIFAR10  & \textbf{94.59} & 74.96 & 17.79/\textbf{81.78} & 11.04/37.57 & 10.0/37.53 \\ 
+% ResNet50 & CIFAR10  & \textbf{94.33} & 74.92 & 10.85/\textbf{89.75} & 18.53/48.07 & 24.49/48.77 \\ 
+% ResNet18 & CIFAR100 & \textbf{75.21} & 74.86 & 2.4/\textbf{32.36}   & 1.0/10.11  & 1.24/10.59 \\ 
+% ResNet50 & CIFAR100 & \textbf{77.26} & 74.73 & 1.83/\textbf{52.59}  & 1.94/19.28 & 1.95/20.75 \\ 
+% \bottomrule
+% \end{tabular}
+% }
+% \caption{\textbf{Performance of model folding at neuron sparsity of 50\%,} \olga{50?} demonstrating the effects of model folding, L$_1$ structured pruning, and L$_2$ structured pruning at maximal sparsity. For model folding, L$_1$ pruning, and L$_2$ pruning results are presented as without REPAIR and with REPAIR.}
+% \label{appx:tb:performance}
+% \end{table}
+
+
+
+
+
+\section{Channel similarity}
+\label{appx:sec:channel_similarity}
+
+Models learned by SGD trend to have correlated patterns or similar parameters in the weight space. \figref{fig:weightmap:resnet18} shows $3\times3$ filter weights in \emph{conv1} of a pre-trained ResNet18. These filters across the first 3 input channels and first 16 output channels ordered by the entropy of filter weight. From the plot, most filters of a channel can find at least one another similar filter in other channels, which means filter similarity may lead to structured redundancy.
+
+\begin{figure*}[h]
+    \centering
+    % weight_resnet18_conv1.png
+     \includegraphics[angle=90, width=.69\linewidth]{old_figs/vis_weight/weight_resnet18_imagenet_3x16_sortby_entropy.png}
+    \caption{\textbf{Similar patterns in weight map of \emph{conv1} layer in ResNet18 pre-trained on ImageNet~\citep{deng2009imagenet}}. Each small square represents the weights of a single filter in cool-warm color map, where each color of grid corresponds to a weight value. 
+    }
+    \label{fig:weightmap:resnet18}
+\end{figure*}
+
+To investigate the filter redundancy within a layer, we apply weight matching activation matching
+from the literature~\citep{jordan2022repair} to each layer of ResNet18 pretrained on CIFAR10~\citep{cifar10} in~\figref{fig:channel_similarity} and on ImageNet~\citep{deng2009imagenet} in \figref{fig:hist:resnet18_imagenet}. We observe two findings: (1) The correlation score distribution varies across layers. The earlier and narrower the lay ers are, the more scattered the correlation coefficients are, and only a few have high correlation coefficients. The wider and later the layers are, the more compact the correlation coefficients are, and most of the matching channels have high correlation coefficients. (2) In the same layer, the distribution of correlation coefficients among matched channels differs across various pre-training datasets. This observation does not fully align with the claim by \citet{chen2023going} regarding the downward trend of similarity before a reversal. It appears that this characterization might not consistently hold across different models and pre-trained dataset.
+
+\begin{figure*}[h]
+    \centering
+     \includegraphics[width=.99\linewidth]{old_figs/hist/hist_matched_channles_resnet18_ImageNet.png}
+    \caption{\textbf{Layer-wise correlation between matched channels in ResNet18 trained on ImageNet.} We compute a layer-wise correlation matrix by matching activations between channels, then assign each channel its best match in the same layer using a greedy pairing based on the correlation matrix.}
+    \label{fig:hist:resnet18_imagenet}
+\end{figure*}
+
+
+
+\subsection{The impact of regularization}
+
+In \figref{fig:comparison:ifm}, the models on CIFAR10 were trained without regularization, while the pre-trained ImageNet models were sourced from \texttt{torchvision}. In \figref{appx:regularization}, we extend the comparison of folding and pruning methods on  CIFAR10, including ResNet18 (left column) and VGG11 (right column) models trained with explicit L$_1$ and L$_2$ regularization. L$_1$ regularization, in particular, promotes neuron sparsity, leading structured magnitude pruning methods to outperform model folding under these conditions. However, a comparison between \figref{fig:comparison:ifm} and \figref{appx:regularization} shows that model folding with L$_2$ regularization maintains the highest accuracy at higher sparsity levels, surpassing 80\% accuracy. In contrast, the accuracy of the pruned network trained with L$_1$ drops significantly, reaching just 33\% at 75\% sparsity.
+
+\begin{figure*}[h]
+    \centering
+     \includegraphics[width=.45\linewidth]{figs/resnet18_cifar10_acc_L1_regularization.jpg}
+     \includegraphics[width=.45\linewidth]{figs/vgg11_bn_cifar10_acc_L1_regularization.jpg}
+     \includegraphics[width=.45\linewidth]{figs/resnet18_cifar10_acc.jpg}
+     \includegraphics[width=.45\linewidth]{figs/vgg11bn_cifar10_acc.jpg}
+    \caption{\textbf{ResNet18 (left column) and VGG11 (right column) models trained with L$_1$ (top row) and L$_2$ (bottom row) regularization}. Structured magnitude pruning outperforms model folding only if training explicitly regularizes for model sparsity (L$_1$ norm). REPAIR is hardly beneficial for all structural pruning methods.}
+    \label{appx:regularization}
+\end{figure*}
+
+
+
+\subsection{Folding wider models}
+Do wider networks present more opportunities for model folding? We first examine the layer-wise correlation among matched channels in VGG11 and its wider variants on CIFAR10, as shown in \figref{fig:hist:resnet18_cifar10:wider}. This ablation study reveals that increasing the layer width strengthens the matched correlations, suggesting greater potential for folding. Building on this, \figref{fig:widernets} demonstrates the application of model folding also to 1x/2x/3x wider MLP and ResNet50 architectures, trained on CIFAR10 and CIFAR100, showing consistent performance gains as width increases.
+
+
+\begin{figure*}[t]
+    \centering
+     \includegraphics[width=.49\linewidth]{figs/mlp_cifar10_wider_model_acc.png}
+     \includegraphics[width=.49\linewidth]{figs/resnet50_ciafr100_wider_model_acc_1.jpg}
+    \caption{\textbf{Model folding performance improves with increasing model width.} The MLP model consists of three stacked mlp blocks (including a fully connected layer, a BN layer, and a ReLU layer), followed by a final classifier. Upscaled versions of MLP (\textbf{left}) and ResNet50 (\textbf{right}) architectures, trained on CIFAR10 and CIFAR100, demonstrate the consistent advantages of model folding. 
+    } 
+    \label{fig:widernets}
+\end{figure*}
+
+
+\section{Model Folding on LLMs}
+\label{appx:llms}
+
+% \begin{figure*}[h]
+%     \centering
+%      \includegraphics[width=\linewidth]{figs/llm_folding_ratio_search.csv_combined.png}
+%     \caption{\textbf{Layer sensitivity analysis per layer in LLaMA-7B~\citep{llama}.} This figure shows the impact of folding layers on the overall model performance as the compression ratio increases.}
+%     \label{fig:llms:compression ratio search}
+% \end{figure*}
+
+% \fakeparagraph{Layer Sensitivity Analysis} To maintain better performance of LLMs, different folding ratio needs to be decided for each layer. We analyze the sensitivity of each layer to fold by evaluating how changes in that layer affect the overall model performance, such as perplexity on WikiText2 dataset. In \figref{fig:llms:compression ratio search}, we increase the compression ratio in a single layer of LLMs model and evaluate the compressed model perplexity. To handle the trade-off between sparsity and performance, we set a threshold to select the compression ratio of each layer. To maintain and functionality and better performance, we also didn't fold the first 8 blocks and the last 2 blocks according to the implementation LLM-pruner~\citep{llmpruner}.\dong{this does not work}\\
+
+Table~\ref{tab:llama-7b-example} presents example outputs from both the original and the pruned LLaMA-7B models, as processed by model folding. From the responses presented in Table~\ref{tab:llama-7b-example}, it is evident that when folding 20\% of the parameters, the pruned model continues to perform well.  In Tab.~\ref{tab:llama2performance}, we also compare model folding with these methods on LLaMA2-7B~\citep{llama2}, focusing on perplexity on the WikiText2~\citep{wikitext2} validation set and zero-shot performance across four tasks using the EleutherAI LM Harness~\citep{eval-harness}. We take the same folding sparsity as shown in Tab.~\ref{tab:llmperformance}.
+
+\begin{table}[h!]
+\centering
+\small{
+\resizebox{\textwidth}{!}{
+\begin{tabular}{l|l|c|c|ccccc}
+\toprule
+Prune ratio & Method & Data usage & WikiText2$\downarrow$ & BoolQ & WinoGrande & ARC-e & ARC-c & Average$\uparrow$ \\
+\midrule
+\textbf{0\%}   & LLaMA2-7B~\citep{llama2}       & /          & 5.12    & 77.7   & 68.98   & 76.34   & 43.26   &  66.57  \\
+\midrule
+20\%  & Magnitude Prune & /          & Inf   & 44.8   & 49.8   & 26.22   & 21.93   & 44.52   \\ 
+20\%  & LLM-Pruner~\citep{llmpruner}     & Gradients  & 10.58   &64.62   &63.54    &68.39    &36.52   & 51.78    \\ 
+20\%  & FLAP~\citep{flap}           & Calibration& 6.87    & 71.5   & 68.74   & 70.20   & 36.95   & 61.85   \\ 
+20\%  & Wanda\_sp~\citep{wanda}      & Calibration& 8.78   & 72.20   & 63.93   & 70.50   & 40.01   & 61.66   \\ 
+20\%  & Model Folding  & /          & 17.46   & 62.72   & 61.80   & 49.00   &26.62   & 50.03   \\ 
+\bottomrule
+\end{tabular}
+}
+}
+\caption{\textbf{Performance of structured pruning methods on LLaMA2-7B without post-tuning}, showing perplexity on WikiText2 and zero-shot performance across tasks. "Inf" represents an extremely great value. The "Average" is computed over four tasks. "Wanda\_sp" represents an adapted Wanda method for structured pruning. Despite not using data or fine-tuning, model folding achieves comparable performance to data-driven methods.}
+\label{tab:llama2performance}
+\end{table}
+
+
+\begin{table*}[h]
+    \centering
+    %\resizebox{\textwidth}{!}{
+    \small
+    \renewcommand{\arraystretch}{1.5}     
+    \scalebox{0.80}{%
+    \begin{tabular}{p{2cm}|p{15cm}}
+        \toprule
+        Model  & Generated Sentences\\
+        \midrule
+        \multirow{4}{2cm}{LLaMA-7B (ratio=0\%)} & \underline{Instruction:} What are prime numbers? \underline{Response:} Prime numbers are numbers that are only divisible by 1 and itself. For example, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73\\
+        \cline{2-2} 
+        & \underline{Instruction:} Please introduce Newton's second law \underline{Response:} Newton's second law of motion states that the net force acting on an object is equal to the rate of change of the object's momentum. The net force acting on an object is equal to the rate of change of the object's momentum. The net force acting on an object is equal to the rate of change of the object's momentum. Newton's second law of motion states that the net force acting on an object is equal to the rate  \\
+        \cline{2-2} 
+        & \underline{Instruction:} What is the difference between monkeys and gorillas? \underline{Response:} Monkeys are primates that are smaller than gorillas. They are also more agile and have longer tails. Gorillas are larger than monkeys and have shorter tails. What is the difference between a gorilla and a chimpanzee? What is the difference between a gorilla and a chimpanzee? What is the difference between a gorilla and a chimpanzee? What is the difference between a gorilla  \\
+        \cline{2-2} 
+        & \underline{Instruction:} How many planets are there in the solar system? \underline{Response:} There are eight planets in the solar system. The planets are Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus and Neptune. What is the name of the planet that is closest to the sun? What is the name of the planet that is the closest to the sun? What is the name of the planet that is the closest to the sun What is the name of the planet that is the closest to the sun\\
+        \midrule
+        \multirow{6}{2cm}{LLaMA-7B (ratio=20\%)} & \underline{Instruction:} What are prime numbers? \underline{Response:} A prime number is a number that is divisible by only two numbers. For example, 2, 3, 5, 7, 11, 13, 15, 17, 23, 25, 27, 31, 33, 35, 37, 41, 43, 45, 47, 51\\
+        \cline{2-2} 
+        & \underline{Instruction:} Please introduce Newton's second law \underline{Response:} The second law of motion is Newton's law of gravity. Newton's law of gravity is that every object is attracted by every other object. The more the two objects are attracted, the more strongly they are attracted. Newton's law of gravity is the law of gravity. What is the second law of motion? What is the second law of motion? What is the second law of motion? What is the second law of motion \\
+        \cline{2-2} 
+        & \underline{Instruction:} What is the difference between monkeys and gorillas? \underline{Response:} The answer is simple: monkeys are smaller animals while gorillas are larger animals. What is the difference between a monkey and a gorilla? The answer is simple: monkeys are smaller animals while gorillas are larger animals. The size of the body is not the only difference between monkeys and g What is the difference between a monkey and a gri What is the difference between a monkey and a griWhat is the difference between a\\
+      \cline{2-2} 
+        & \underline{Instruction:} How many planets are there in the solar system? \underline{Response:} There are eight planets in the solar system. The planets are Mercury, Venus, Earth, Mars, Jupiter, Saturn, Aster and Nept. The planets are arranged in order of size from smallest to largest. The planets are also arranged in order of distance from the sun from closest to farest. What is the difference between planets and stars? What is the difference between planets and stars? What is the difference between planets\\
+        \bottomrule
+    \end{tabular}
+    }
+    \caption{\textbf{Generated examples from the original LLaMA-7B and pruned by model folding.} The maximal number of output tokens is set to 100 in both models.}
+    \label{tab:llama-7b-example}
+\end{table*}
+
+
+
+
+
+
+\section{Handling Residual Blocks}
+\label{appx:residual}
+
+In this subsection we discuss the behavior of Residual Blocks after compression. In a similar manner to the analysis of Normalized Blocks, we investigate the possible dependencies between the clustering matrices for different parts of the residual block and the incoming layers.
+
+\subsection{Simple Residual Blocks}
+
+Consider a Simple Residual Block, consisting of a shortcut represented by an identity transform \( \mathbf{W}_{l,s} = \mathbf{I} \), and a preceding layer decomposed using a clustering matrix \( \mathbf{U}_{l-1} \). The projection matrix is defined as:
+\[
+\mathbf{C}_{l-1} = \mathbf{U}_{l-1} \left(\mathbf{U}_{l-1}^T \mathbf{U}_{l-1}\right)^{-1} \mathbf{U}_{l-1}^T.
+\]
+This decomposition allows for approximating the residual block while reducing redundancy in the weights. The residual block approximation satisfies:
+\[
+\mathbf{y}_l \approx \sigma\left(\mathbf{W}_l^{(2)} \sigma\left(\mathbf{W}_l^{(1)} \mathbf{C}_{l-1}^T \mathbf{x}_{l-1}\right) + \mathbf{C}_{l-1}^T \mathbf{x}_{l-1}\right),
+\]
+where \( \mathbf{x}_{l-1} \) is the input to the block, \( \mathbf{y}_l \) is the output, and \( \sigma(\cdot) \) represents the activation function. 
+
+The shortcut \( \mathbf{W}_{l,s} = \mathbf{I} \) ensures that the input \( \mathbf{x}_{l-1} \) is directly added to the output of the main path, preserving information and facilitating gradient flow.
+
+\paragraph{Decomposing \( \mathbf{W}_l^{(2)} \).}
+
+Let the weights \( \mathbf{W}_l^{(2)} \) be decomposed using a clustering matrix \( \mathbf{U}_l^{(2)} \) and its corresponding projection:
+\[
+\mathbf{C}_l^{(2)} = \mathbf{U}_l^{(2)} \left(\mathbf{U}_l^{(2)T} \mathbf{U}_l^{(2)}\right)^{-1} \mathbf{U}_l^{(2)T}.
+\]
+Substituting this decomposition into the residual block yields:
+\[
+\mathbf{y}_l \approx \sigma\left(\mathbf{C}_l^{(2)} \mathbf{W}_l^{(2)} \sigma\left(\mathbf{W}_l^{(1)} \mathbf{C}_{l-1}^T \mathbf{x}_{l-1}\right) + \mathbf{C}_{l-1}^T \mathbf{x}_{l-1}\right).
+\]
+This approximation captures the effect of clustering and compressing the weights while maintaining the structure of the residual block.
+
+\paragraph{Aligning Clustering Matrices.}
+
+To simplify the folding process, we assert that \( \mathbf{U}_{l-1} = \mathbf{U}_l^{(2)} \). This ensures consistency in the clustering across the residual block, reducing the need for additional transformations between layers. As a result, the folding costs for the preceding layer and the current layer can be summed directly:
+\[
+J_{\text{tot}} = J_l^{(2)} + J_{l-1}.
+\]
+
+\paragraph{Total Approximation Error.}
+
+The total approximation error for folding the residual block is defined as:
+\[
+J_{\text{tot}} = \|\mathbf{W}_{\text{tot}} - \mathbf{C}_l^{(2)} \mathbf{W}_{\text{tot}} \|_F^2,
+\]
+where:
+\[
+\mathbf{W}_{\text{tot}} = \begin{bmatrix} \mathbf{W}_{l-1} & \mathbf{W}_l^{(2)} \end{bmatrix}.
+\]
+Here, \( \mathbf{W}_{\text{tot}} \) combines the weights of both layers in the residual block into a single representation. This unified view allows the clustering process to be applied holistically, ensuring that redundancies across the entire block are captured and reduced.
+
+By asserting \( \mathbf{U}_{l-1} = \mathbf{U}_l^{(2)} \) and summing the individual folding costs \( J_l^{(2)} \) and \( J_{l-1} \), we achieve a compact representation of the residual block with minimal approximation error. This approach ensures that the compressed residual block remains effective while reducing redundancy in the weights.
+
+
+
+
+\subsection{Residual Blocks with Non-Identity Shortcuts}
+Consider a Residual Block with a shortcut represented by a weight matrix \( \mathbf{W}_{l, s} \), and a preceding layer decomposed using a clustering matrix \( \mathbf{U}_{l-1} \). The projection matrix is defined as:
+\[
+\mathbf{C}_{l-1} = \mathbf{U}_{l-1} \left(\mathbf{U}_{l-1}^T \mathbf{U}_{l-1}\right)^{-1} \mathbf{U}_{l-1}^T.
+\]
+This decomposition allows for approximating and clustering the preceding layer’s weights while maintaining their representational capacity. The corresponding approximation for the residual block satisfies:
+\[
+\mathbf{y}_{l} \approx \sigma\left(\mathbf{W}_{l}^{(2)} \sigma\left(\mathbf{W}_l^{(1)} \mathbf{C}_{l-1}^T \mathbf{x}_{l-1}\right) + \mathbf{W}_{l, s} \mathbf{C}_{l-1}^T \mathbf{x}_{l-1}\right),
+\]
+where:
+\begin{itemize}
+    \item \( \mathbf{W}_l^{(2)} \) is the weight matrix of the second layer in the residual block,
+    \item \( \mathbf{W}_l^{(1)} \) is the weight matrix of the first layer in the residual block,
+    \item \( \mathbf{W}_{l,s} \) is the shortcut connection weight matrix,
+    \item \( \sigma(\cdot) \) represents the activation function.
+\end{itemize}
+
+\paragraph{Decomposition of Weight Matrices.}
+
+The weights \( \mathbf{W}_l^{(2)} \) and \( \mathbf{W}_{l,s} \) are decomposed using their respective clustering matrices. For \( \mathbf{W}_l^{(2)} \), the decomposition is:
+\[
+\mathbf{C}_{l}^{(2)} = \mathbf{U}_{l}^{(2)} \left(\mathbf{U}_{l}^{(2)T} \mathbf{U}_{l}^{(2)}\right)^{-1} \mathbf{U}_{l}^{(2)T}.
+\]
+For \( \mathbf{W}_{l,s} \), the decomposition is:
+\[
+\mathbf{C}_{l, s} = \mathbf{U}_{l, s} \left(\mathbf{U}_{l, s}^T \mathbf{U}_{l, s}\right)^{-1} \mathbf{U}_{l, s}^T.
+\]
+Substituting these decompositions into the approximation yields:
+\[
+\mathbf{y}_{l} \approx \sigma\left(\mathbf{C}_{l}^{(2)} \mathbf{U}_{l}^{(2)T} \mathbf{W}_{l}^{(2)} \sigma\left(\mathbf{W}_l^{(1)} \mathbf{C}_{l-1}^T \mathbf{x}_{l-1}\right) + \mathbf{C}_{l, s} \mathbf{W}_{l, s} \mathbf{C}_{l-1}^T \mathbf{x}_{l-1}\right).
+\]
+
+\paragraph{Consistency Constraint and Total Approximation Error.}
+To simplify the folding process and ensure consistency across the layers, we introduce the constraint:
+\[
+\mathbf{U}_{l, s} = \mathbf{U}_{l}^{(2)}.
+\]
+This ensures that the same clustering matrix is used for both the shortcut weights \( \mathbf{W}_{l, s} \) and the second layer’s weights \( \mathbf{W}_{l}^{(2)} \). By adding the individual folding costs \( J_l^{(2)} \) and \( J_{l, s} \), we ensure that Lemma~\ref{lemma1} holds, leading to the total approximation error for the residual block:
+\[
+J_\text{tot} = J_l^{(2)} + J_{l,s}.
+\]
+
+\paragraph{Unified Approximation for Residual Blocks.}
+The total approximation error can be expressed compactly as:
+\[
+J_\text{tot} = \|\mathbf{W}_\text{tot} - \mathbf{C}_{l}^{(2)} \mathbf{W}_\text{tot}\|_F^2,
+\]
+where:
+\[
+\mathbf{W}_\text{tot} = 
+    \begin{bmatrix}
+        \mathbf{W}_{l, s} \mid \mathbf{W}_{l}^{(2)}
+    \end{bmatrix}.
+\]
+Here, \( \mathbf{W}_\text{tot} \) combines the shortcut weights \( \mathbf{W}_{l, s} \) and the second-layer weights \( \mathbf{W}_l^{(2)} \) into a single matrix. This unified representation allows the folding process to be applied holistically, reducing redundancies across the entire residual block.
+
+The decomposition of weights in residual blocks with non-identity shortcuts introduces a consistent clustering mechanism for both the shortcut and the second layer. By ensuring that \( \mathbf{U}_{l, s} = \mathbf{U}_l^{(2)} \), we maintain alignment in the clustering process, leading to a compact and efficient representation with minimal approximation error.
+
+
+
+
+
+\section{Handling Batch Normalization Layers}
+\label{appx:bn}
+Batch Normalization layers, when combined with linear layers, introduce additional scaling and normalization operations. One special case is a layer consisting of a linear block followed by a Batch Normalization block, formally defined as:
+\[
+\mathbf{z}_{l+1} = \mathbf{W}_{l+1}\sigma(\mathbf{\Sigma}_s\mathbf{\Sigma}_n\mathbf{W}_l \mathbf{x}_{l-1}),
+\]
+where:
+\begin{itemize}
+    \item \( \mathbf{W}_l \): weight matrix of the linear block,
+    \item \( \mathbf{\Sigma}_s \): Batch Normalization scaling matrix,
+    \item \( \mathbf{\Sigma}_n \): Batch Normalization normalization matrix,
+    \item \( \mathbf{W}_{l+1} \): weight matrix of the subsequent layer,
+    \item \( \sigma(\cdot) \): activation function applied element-wise.
+\end{itemize}
+
+A design choice in handling such layers is to decompose \( \mathbf{\Sigma}_s \), \( \mathbf{\Sigma}_n \), and \( \mathbf{W}_l \) separately while preserving the original structure of the layer. This ensures that the scaling, normalization, and linear blocks are treated as distinct functional units. The decomposed approximation for the layer can then be expressed as:
+\[
+\mathbf{z}_{l+1} \approx \Tilde{\mathbf{z}}_{l+1} = \mathbf{W}_{l+1}\mathbf{C}_{s}^T\sigma(\mathbf{C}_{s}\mathbf{\Sigma}_s\mathbf{C}_{n}\mathbf{\Sigma}_n\mathbf{C}_{l}\mathbf{W}_l \mathbf{x}_{l-1}),
+\]
+where the projection matrices \( \mathbf{C}_s \), \( \mathbf{C}_n \), and \( \mathbf{C}_l \) are defined as:
+\begin{align*}    
+    \mathbf{C}_{s} &= \mathbf{U}_{s}(\mathbf{U}_{s}^T\mathbf{U}_{s})^{-1}\mathbf{U}_{s}^T = \mathbf{U}_{s}\mathbf{M}_{s}, \\
+    \mathbf{C}_{n} &= \mathbf{U}_{n}(\mathbf{U}_{n}^T\mathbf{U}_{n})^{-1}\mathbf{U}_{n}^T = \mathbf{U}_{n}\mathbf{M}_{n}, \\
+    \mathbf{C}_{l} &= \mathbf{U}_{l}(\mathbf{U}_{l}^T\mathbf{U}_{l})^{-1}\mathbf{U}_{l}^T = \mathbf{U}_{l}\mathbf{M}_{l}.
+\end{align*}
+Here, \( \mathbf{U}_s \), \( \mathbf{U}_n \), and \( \mathbf{U}_l \) are clustering matrices, and \( \mathbf{M}_s \), \( \mathbf{M}_n \), and \( \mathbf{M}_l \) are normalization terms.
+
+\paragraph{Clustering Assumptions.}
+To simplify the decomposition and ensure alignment across the layer components, we impose the following consistency constraint:
+\[
+\mathbf{U}_{s} = \mathbf{U}_{n} = \mathbf{U}_{l}.
+\]
+This assumption ensures that the same clustering structure is applied to the scaling, normalization, and linear blocks, leading to a unified decomposition. Under this assumption, the approximation becomes:
+\[
+\Tilde{\mathbf{z}}_{l+1} = \mathbf{W}_{l+1}\mathbf{C}_{l}^T\sigma(\mathbf{U}_l\mathbf{M}_l\mathbf{W}_{b,l}\mathbf{U}_l\mathbf{M}_l\mathbf{\Sigma}_n\mathbf{U}_l\mathbf{M}_{l}\mathbf{W}_l\mathbf{x}_{l-1}),
+\]
+where \( \mathbf{W}_{b,l} \) represents the intermediate scaling factors. 
+
+\paragraph{Applying Diagonal Properties.}
+Using Lemma~\ref{diag_u}, we observe that the normalization and scaling matrices can be represented as diagonal matrices:
+\[
+\Tilde{\mathbf{z}}_{l+1} = \mathbf{W}_{l+1}\mathbf{C}_{l}^T\sigma(\mathbf{U}_l\text{Diag}(\mathbf{M}_l\text{diag}(\mathbf{W}_{b,l}))\text{Diag}(\mathbf{M}_l\text{diag}(\mathbf{\Sigma}_n))\mathbf{M}_{l}\mathbf{W}_l \mathbf{x}_{l-1}).
+\]
+Furthermore, by applying Lemma~\ref{diag-map}, we rewrite this expression as:
+\[
+\Tilde{\mathbf{z}}_{l+1} = \mathbf{W}_{l+1}\mathbf{C}_{l}^T\sigma(\text{Diag}(\mathbf{C}_l\text{diag}(\mathbf{W}_{b,l}))\text{Diag}(\mathbf{C}_l\text{diag}(\mathbf{\Sigma}_n))\mathbf{C}_{l}\mathbf{W}_l \mathbf{x}_{l-1}).
+\]
+This shows that the diagonal structure of the scaling and alignment matrices is preserved through the decomposition, maintaining the original behavior of the Batch Normalization block.
+
+\paragraph{Compression Cost.}
+According to the definition of the Model Folding problem and using the properties stated in Lemma~\ref{diag_norm}, the compression cost for the layer can be expressed as:
+\[
+J_{tot} = \|{\mathbf{W}}_{tot} - \mathbf{C}_l{\mathbf{W}}_{tot}\|_F^2,
+\]
+where:
+\[
+{\mathbf{W}}_{tot} = \begin{bmatrix}\mathbf{W}_{l+1}^T & \mathbf{W}_l & \text{diag}(\mathbf{\Sigma}_s) & \text{diag}(\mathbf{\Sigma}_n)\end{bmatrix}.
+\]
+This cost quantifies the approximation error introduced by clustering the weights, scaling, and normalization matrices while preserving the layer's functional structure.
+
+By decomposing the Batch Normalization and linear blocks separately and aligning their clustering structures (\( \mathbf{U}_{s} = \mathbf{U}_{n} = \mathbf{U}_{l} \)), we ensure that the original diagonal properties of the scaling and normalization matrices are preserved. The resulting compression cost captures the overall error of folding the entire layer into a compact representation.
+
+
+
+
+\subsection{Algorithmic Description of Fold-AR}
+
+The Fold-AR algorithm for a single layer combines the Batch Normalization components and layer weights into a compact representation, followed by clustering to reduce redundancy. The steps are described in Algorithm~\ref{alg:fold-ar}.
+
+\begin{algorithm}[H]
+\caption{Fold-AR for a Single Layer}
+\label{alg:fold-ar}
+\begin{algorithmic}[1]
+\Require $\mathbf{\Sigma}_s$, $\mathbf{\Sigma}_n$, $\mathbf{W}_l$, $\mathbf{W}_{l+1}$ \Comment{Input components of the layer}
+\State Compute the normalized weight matrix: $\hat{\mathbf{W}}_l \gets \mathbf{\Sigma}_n \mathbf{W}_l$
+\State Construct the combined weight matrix: $\mathbf{W}_{\text{tot}} \gets \begin{bmatrix} \mathbf{W}_{l+1}^T & \hat{\mathbf{W}}_l & \text{diag}(\mathbf{\Sigma}_s) \end{bmatrix}$
+\State Solve the clustering problem:
+\[
+\mathbf{U} \gets \argmin_{\mathbf{U}} \|\mathbf{W}_{\text{tot}} - \mathbf{U}(\mathbf{U}^T\mathbf{U})^{-1}\mathbf{U}^T\mathbf{W}_{\text{tot}}\|_F^2
+\]
+\hspace{4em} subject to $\mathbf{U}^T \in \{0, 1\}^{m \times n}$ and $m < n$
+\State Update the scaling matrix: $\mathbf{\Sigma}_s \gets (\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \mathbf{\Sigma}_s \mathbf{U}$
+\State Update the second-layer weights: $\mathbf{W}_{l+1}^T \gets \mathbf{U}^T \mathbf{W}_{l+1}^T$
+\State Update the current-layer weights: $\hat{\mathbf{W}}_l \gets (\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \hat{\mathbf{W}}_l$
+\For{$c = 1, \dots, m$} \Comment{Adjust scaling factors for each cluster}
+    \State Compute cluster size: $N_c \gets \sum_{i} \mathbb{I}(\mathbf{U}_{i,c} = 1)$ \Comment{$\mathbb{I}(\cdot)$ is the indicator function}
+    \State Compute intra-cluster correlation:
+    \[
+    E[c] \gets \frac{1}{N_c^2 - N_c} \sum_{i, j} \frac{\hat{\mathbf{w}}_{l,i,:} \cdot \hat{\mathbf{w}}_{l,j,:}^T}{\sqrt{\|\hat{\mathbf{w}}_{l,i,:}\|^2 \|\hat{\mathbf{w}}_{l,j,:}\|^2}}
+    \mathbb{I}(\mathbf{U}_{i,c} = \mathbf{U}_{j,c} = 1) \mathbb{I}(i \neq j)
+    \]
+    \State Update the scaling factor for cluster $c$:
+    \[
+    (\mathbf{\Sigma}_s)_{c,c} \gets (\mathbf{\Sigma}_s)_{c,c} \frac{N_c}{\sqrt{N_c + (N_c^2 - N_c) E[c]}}
+    \]
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection*{Explanation of Key Steps}
+
+\paragraph{1. Combining Normalization and Weights.}
+The normalization matrix \( \mathbf{\Sigma}_n \) is diagonal, and multiplying it with the weight matrix \( \mathbf{W}_l \) produces the normalized weight matrix:
+\[
+\hat{\mathbf{W}}_l = \mathbf{\Sigma}_n \mathbf{W}_l.
+\]
+This step integrates the normalization operation into the weights of the current layer, reducing the complexity of subsequent computations.
+
+\paragraph{2. Construction of Combined Weight Matrix.}
+The combined matrix \( \mathbf{W}_{\text{tot}} \) is defined as:
+\[
+\mathbf{W}_{\text{tot}} = \begin{bmatrix} \mathbf{W}_{l+1}^T & \hat{\mathbf{W}}_l & \text{diag}(\mathbf{\Sigma}_s) \end{bmatrix}.
+\]
+This matrix aggregates the second-layer weights (\( \mathbf{W}_{l+1}^T \)), the normalized current-layer weights (\( \hat{\mathbf{W}}_l \)), and the scaling factors (\( \text{diag}(\mathbf{\Sigma}_s) \)) into a single representation, preparing them for joint clustering.
+
+\paragraph{3. Clustering.}
+The projection matrix \( \mathbf{U} \) is computed by solving the clustering problem:
+\[
+\mathbf{U} = \argmin_{\mathbf{U}} \|\mathbf{W}_{\text{tot}} - \mathbf{U}(\mathbf{U}^T \mathbf{U})^{-1}\mathbf{U}^T \mathbf{W}_{\text{tot}}\|_F^2,
+\]
+subject to \( \mathbf{U}^T \in \{0, 1\}^{m \times n} \) and \( m < n \). The clustering minimizes the reconstruction error by projecting the combined weights into a lower-dimensional space defined by \( m \) clusters.
+
+\paragraph{4. Scaling Adjustments.}
+To ensure proper scaling within each cluster, the diagonal elements of \( \mathbf{\Sigma}_s \) are updated. For each cluster \( c \), the adjustment considers the size of the cluster (\( N_c \)) and the intra-cluster correlation (\( E[c] \)):
+\[
+(\mathbf{\Sigma}_s)_{c,c} \gets (\mathbf{\Sigma}_s)_{c,c} \frac{N_c}{\sqrt{N_c + (N_c^2 - N_c)E[c]}}.
+\]
+The intra-cluster correlation \( E[c] \) is computed as a normalized dot product, capturing the redundancy among the weights within the same cluster. This adjustment preserves the scaling properties of the original layer.
+
+\paragraph{5. Final Updates.}
+The current-layer weights \( \hat{\mathbf{W}}_l \) and second-layer weights \( \mathbf{W}_{l+1}^T \) are updated to align with the clustered representation:
+\[
+\hat{\mathbf{W}}_l \gets (\mathbf{U}^T \mathbf{U})^{-1} \mathbf{U}^T \hat{\mathbf{W}}_l, \quad \mathbf{W}_{l+1}^T \gets \mathbf{U}^T \mathbf{W}_{l+1}^T.
+\]
+These updates ensure consistency between the clustered weights and the projection matrix \( \mathbf{U} \).
+
+This algorithm combines clustering, scaling adjustments, and weight updates to compress the layer while preserving its functional properties. The clustering step minimizes redundancy, and the final updates align all components of the layer with the clustered structure.
+
+
+
+
+
+
+
+
+\section{Folding Similar Channels in MLPs}
+\label{appx:similar_in_mlps}
+For fully connected networks, where two successive layers are defined as:
+\[
+	\mathbf{x}_{l} = \sigma(\mathbf{W}_{l}\mathbf{x}_{l-1}) \;\; \text{and} \;\; \mathbf{x}_{l+1} = \sigma(\mathbf{W}_{l+1}\mathbf{x}_l),
+\]
+where \( \mathbf{x}_l \) represents the activations of layer \( l \), \( \mathbf{W}_l \) and \( \mathbf{W}_{l+1} \) are the weight matrices, and \( \sigma \) is the activation function. The channels of the layer are defined as the coordinates \( \mathbf{x}_{l,i} \) of the vector \( \mathbf{x}_l \). Each channel corresponds to a specific dimension in the activations.
+
+The folding cost \( J_l \) for the \( l \)-th layer is defined as:
+\[
+	J_l = \left\| \mathbf{W}_l - \mathbf{C}_l \mathbf{W}_l\right\|_F^2 + \left\| \mathbf{W}_{l+1}^T - \mathbf{C}_l \mathbf{W}_{l+1}^T\right\|_F^2,
+\]
+where \( \mathbf{C}_l \) is a clustering matrix. This cost function represents the optimization objective to minimize the approximation error introduced by folding (clustering) the weights of the \( l \)-th layer. The first term measures the reconstruction error for the weights \( \mathbf{W}_l \), while the second term measures the reconstruction error for the weights \( \mathbf{W}_{l+1} \) under the transformation \( \mathbf{C}_l \). Together, these terms ensure that the clustering transformation preserves the structure and relationships of the weights across layers.
+
+From the perspective of K-Means as a matrix decomposition problem, the grouping of scalar weights into vectors is defined as follows:
+\[
+	\mathbf{W}_l = \begin{bmatrix}
+    	\mathbf{p}_1^T \\
+    	\mathbf{p}_2^T \\
+    	\vdots \\
+    	\mathbf{p}_n^T
+	\end{bmatrix} \;\; \text{and} \;\; \mathbf{W}_{l+1} = \begin{bmatrix}
+    	\mathbf{q}_1 &
+    	\mathbf{q}_2 &
+    	\ldots &
+    	\mathbf{q}_n
+	\end{bmatrix},
+\]
+where \( \mathbf{p}_i^T \) are the rows of \( \mathbf{W}_l \) and \( \mathbf{q}_i \) are the columns of \( \mathbf{W}_{l+1} \). These groupings reflect the natural structure of the weight matrices in fully connected layers:
+\begin{itemize}
+    \item Each row of \( \mathbf{W}_l \) represents the weights associated with a specific output channel of layer \( l \).
+    \item Each column of \( \mathbf{W}_{l+1} \) represents the weights associated with a specific input channel of layer \( l+1 \).
+\end{itemize}
+
+In this formulation, the rows \( \mathbf{p}_i^T \) and columns \( \mathbf{q}_i \) are treated as vectors to be clustered by the matrix \( \mathbf{C}_l \), which aligns with the K-Means decomposition perspective. The clustering matrix \( \mathbf{C}_l \) maps these weights into representative clusters, preserving the relationships between input and output channels across layers while enabling efficient compression.
+
+
+
+
+
+
+\section{Folding Similar Channels in Convolutional Layers}
+\label{appx:similar_in_cnn}
+For convolutional layers, two successive layers can be defined as:
+\[
+\mathcal{X}_{l} = \sigma(\mathcal{W}_{l} * \mathcal{X}_{l-1}) \quad \text{and} \quad \mathcal{X}_{l+1} = \sigma(\mathcal{W}_{l+1} * \mathcal{X}_l),
+\]
+where \( \mathcal{X}_l \) is a 3-dimensional feature tensor with values \( \mathcal{X}^{(l)}_{c_o,i,j} \). The first dimension, \( c_o \), corresponds to the output channels, while \( i \) and \( j \) represent spatial pixel locations. The 4-dimensional weight tensor \( \mathcal{W}_l \) has values \( \mathcal{W}^{(l)}_{c_o, c_i, i,j} \), where:
+\begin{itemize}
+    \item \( c_o \) corresponds to the output channels of \( \mathcal{X}_l \),
+    \item \( c_i \) corresponds to the input channels of \( \mathcal{X}_{l-1} \).
+\end{itemize}
+To simplify and compress the network, we decompose the weight tensor \( \mathcal{W}_l \) such that output channels of \( \mathcal{X}_l \) (i.e., the values \( \mathcal{X}^{(l)}_{c_o,i,j} \) for \( c_o = 1, \ldots, c_{\text{out}} \)), which are similar in some sense, are merged. This folding problem is defined as:
+\[
+J_l = \left\|\mathcal{W}_l - \mathcal{C}_l \circ \mathcal{W}_l\right\|_T^2 + \left\|\mathcal{W}_{l+1} - \mathcal{W}_{l+1} \circ \mathcal{C}_l\right\|_T^2,
+\]
+where \( \mathcal{C}_l \) corresponds to a \( 1 \times 1 \) convolution parameterized by the clustering matrix \( \mathbf{C}_l \), with \( \mathcal{C}^{(l)}_{c, 1, 1} = \mathbf{C}_{l, c, c'} \).
+
+From this definition, it follows that:
+\[
+J_l = \left\|\mathbf{W}_l - \mathbf{C}_l \mathbf{W}_l\right\|_T^2 + \left\|\mathbf{W}_{l+1} - \mathbf{W}_{l+1}\mathbf{C}_l^T\right\|_T^2,
+\]
+where the weight tensors \( \mathcal{W}_l \) and \( \mathcal{W}_{l+1} \) are mapped to matrices \( \mathbf{W}_l \) and \( \mathbf{W}_{l+1} \) as follows:
+\[
+\mathbf{W}_l = 
+\begin{bmatrix}
+    \text{vec}(\mathcal{W}^{(l)}_{1, 1, :, :})^T & \text{vec}(\mathcal{W}^{(l)}_{1, 2, :, :})^T & \cdots & \text{vec}(\mathcal{W}^{(l)}_{1, c_{\text{in}}, :, :})^T \\
+    \text{vec}(\mathcal{W}^{(l)}_{2, 1, :, :})^T & \text{vec}(\mathcal{W}^{(l)}_{2, 2, :, :})^T & \cdots & \text{vec}(\mathcal{W}^{(l)}_{2, c_{\text{in}}, :, :})^T \\
+    \vdots  & \vdots & \ddots & \vdots \\
+    \text{vec}(\mathcal{W}^{(l)}_{c_{\text{out}}, 1, :, :})^T & \text{vec}(\mathcal{W}^{(l)}_{c_{\text{out}}, 2, :, :})^T & \cdots & \text{vec}(\mathcal{W}^{(l)}_{c_{\text{out}}, c_{\text{in}}, :, :})^T \\
+\end{bmatrix}.
+\]
+
+This means that each convolutional filter contributing to an output channel \( c_o \) is flattened and stacked into a vector, forming the \( c_o \)-th row of the matrix \( \mathbf{W}_l \). Similarly, for \( \mathcal{W}_{l+1} \), each filter associated with the \( c_i \)-th input channel is flattened and stacked into a vector, forming a column of the matrix \( \mathbf{W}_{l+1} \):
+
+\[
+\mathbf{W}_{l+1} = 
+\begin{bmatrix}
+    \text{vec}(\mathcal{W}^{(l+1)}_{1, 1, :, :}) & \text{vec}(\mathcal{W}^{(l+1)}_{1, 2, :, :}) & \cdots & \text{vec}(\mathcal{W}^{(l+1)}_{1, c_{\text{in}}, :, :}) \\
+    \text{vec}(\mathcal{W}^{(l+1)}_{2, 1, :, :}) & \text{vec}(\mathcal{W}^{(l+1)}_{2, 2, :, :}) & \cdots & \text{vec}(\mathcal{W}^{(l+1)}_{2, c_{\text{in}}, :, :}) \\
+    \vdots  & \vdots & \ddots & \vdots \\
+    \text{vec}(\mathcal{W}^{(l+1)}_{c_{\text{out}}, 1, :, :}) & \text{vec}(\mathcal{W}^{(l+1)}_{c_{\text{out}}, 2, :, :}) & \cdots & \text{vec}(\mathcal{W}^{(l+1)}_{c_{\text{out}}, c_{\text{in}}, :, :}) \\
+\end{bmatrix}.
+\]
+
+From the perspective of K-Means as a matrix decomposition problem, the grouping of scalar weights into vectors is defined as follows:
+\[
+\mathbf{W}_l = \begin{bmatrix}
+    \mathbf{p}_1^T \\
+    \mathbf{p}_2^T \\
+    \vdots \\
+    \mathbf{p}_n^T
+\end{bmatrix} \quad \text{and} \quad \mathbf{W}_{l+1} = \begin{bmatrix}
+    \mathbf{q}_1 &
+    \mathbf{q}_2 &
+    \cdots &
+    \mathbf{q}_n
+\end{bmatrix},
+\]
+where:
+\[
+\mathbf{p}_i^T = \begin{bmatrix}
+    \text{vec}(\mathcal{W}^{(l)}_{i, 1, :, :})^T & \text{vec}(\mathcal{W}^{(l)}_{i, 2, :, :})^T & \cdots & \text{vec}(\mathcal{W}^{(l)}_{i, c_{\text{in}}, :, :})^T
+\end{bmatrix},
+\]
+and:
+\[
+\mathbf{q}_j = \begin{bmatrix}
+    \text{vec}(\mathcal{W}^{(l+1)}_{1, j, :, :})^T & \text{vec}(\mathcal{W}^{(l+1)}_{2, j, :, :})^T & \cdots & \text{vec}(\mathcal{W}^{(l+1)}_{c_{\text{out}}, j, :, :})^T
+\end{bmatrix}^T.
+\]
+
+In this formulation, the rows \( \mathbf{p}_i^T \) of \( \mathbf{W}_l \) and columns \( \mathbf{q}_j \) of \( \mathbf{W}_{l+1} \) are grouped into clusters for the folding process, aligning with the K-Means decomposition perspective.
+
+
+
+
+
+\section{Folding Similar Channels in LlamaMLP and LlamaAttention}
+\label{appx:similar_in_llama}
+\subsection{Folding Similar Channels in LlamaMLP}
+
+The LlamaMLP module is composed of three sub-layers: \texttt{gate\_proj}, \texttt{up\_proj}, and \texttt{down\_proj}. These sub-layers define the structure and functionality of the MLP, with the main computation pipeline expressed as:
+\[
+\texttt{down\_proj}(\texttt{act\_fn}(\texttt{gate\_proj}(x)) \times \texttt{up\_proj}(x)).
+\]
+We cluster similar channels in both the output channel and input channel of each sub-layer.
+
+\paragraph{Input Channel Folding.}  
+To fold the \textbf{input channels} of LlamaMLP, we simultaneously consider the input dimensions of both \texttt{gate\_proj} and \texttt{up\_proj} layers, as they collectively define the effective input to the \texttt{gate\_up} sub-layer. The input channels of \texttt{gate\_proj} and \texttt{up\_proj} are clustered respectively using methods similar to those applied in standard MLP layers.
+
+\paragraph{Output Channel Folding.}  
+To fold the \textbf{output channels} of LlamaMLP, we first consider the output channels of both \texttt{gate\_proj} and \texttt{up\_proj} by clustering and adjusting the input channel of the \texttt{down\_proj}. Subsequently, we adjust the output channel of \texttt{down\_proj} according to the residual connection used outside of LlamaMLP.
+
+\subsection{Folding Similar Channels in LlamaAttention}
+
+The LlamaAttention module consists of four primary sub-layers: \texttt{q\_proj}, \texttt{k\_proj}, \texttt{v\_proj}, and \texttt{o\_proj}. These sub-layers define the query, key, value, and output projections, respectively. For clarity and simplicity, we conceptualize \texttt{q\_proj}, \texttt{k\_proj}, and \texttt{v\_proj} as a unified sub-layer referred to as \texttt{q\_k\_v}, which computes the intermediate representations required for attention calculations. The \texttt{o\_proj} sub-layer processes the final output of the attention mechanism. We treat the attention head as the structure to be folded in LlamaAttention. By reshaping the weights of each sub-layer into an MLP-like tensor, we can cluster similar heads, similar to how it is done for a standard MLP layer.
+
+For all configurations of LlamaAttention, including Multi-Head Attention (MHA) and Grouped Query Attention (GQA), the weight shapes of the \texttt{q\_k\_v} sub-layer differ:
+\begin{itemize}
+    \item In MHA, the weights for \texttt{q}, \texttt{k}, and \texttt{v} projections share the same shape: \([ \text{num\_heads} \times \text{head\_dim}, \text{hidden\_size} ]\).
+    \item In GQA, the weights for \texttt{k} and \texttt{v} projections have the shape: \([ \text{num\_kv\_heads} \times \text{head\_dim}, \text{hidden\_size} ]\).
+\end{itemize}
+
+\paragraph{Output Channel Folding.}  
+When performing \textbf{output channel folding} for the LlamaAttention layer, the clustering of the \texttt{o\_proj} sub-layer's output channels is dictated by the residual connection outside of LlamaAttention, ensuring alignment with the clustering results from previous modules. Specifically:
+\begin{itemize}
+    \item The \texttt{o\_proj} weights, originally shaped as 
+    \([ \texttt{num\_heads} \times \texttt{head\_dim}, \texttt{hidden\_size} ]\), 
+    are reshaped into 
+    \([ \texttt{num\_heads}, \texttt{head\_dim}, \texttt{hidden\_size} ]\), 
+    clustered along the first dimension (\texttt{num\_heads}), 
+    and then reshaped back to their original form.
+    \item For clustering within the \texttt{q\_k\_v} sub-layer, the weights for \texttt{q}, \texttt{k}, and \texttt{v} are reshaped into 
+    \([ \texttt{num\_heads},\) \(\texttt{head\_dim}, \texttt{hidden\_size} ]\) (or 
+    \([ \texttt{num\_kv\_heads}, \texttt{head\_dim}, \texttt{hidden\_size} ]\) for \texttt{k} and \texttt{v} in GQA) 
+    and clustered along the first dimension (\texttt{num\_heads} or \texttt{num\_kv\_heads}). 
+    After clustering, the weights are reshaped back to their original dimensions.
+\end{itemize}
+
+\paragraph{Input Channel Folding.}  
+To perform \textbf{input channel folding}, the focus is on the input channels of \texttt{q}, \texttt{k}, and \texttt{v} weights. Since these weights share the same input \texttt{hidden\_states}, each of their weights is clustered along the first dimension (\texttt{hidden\_size}) of their respective matrices. This ensures that the clustering process respects the shared input representation across the \texttt{q\_k\_v} sub-layer while maintaining the integrity of the attention mechanism.
+
+
+\section{Comparison with Knowledge Distillation}
+\label{appx:kd}
+We evaluated some data-free knowledge distillation (KD) methods~\citep{micaelli2019zeroshotknowledgetransferadversarial,chen2019datafreelearningstudentnetworks,fang2020datafreeadversarialdistillation,yu2023data}, on an NVIDIA A100 GPU, for all methods using the same pre-trained teacher model, data loader, and student model setup for consistency. The full model is a ResNet18 pre-defined by torchvision and trained on CIFAR10, while the student models for each KD method share the same architecture but differ in the number of channels across all layers to achieve the desired sparsity levels. Specifically, in ResNet18, the number of output channels for all blocks is a multiple of 64, which is also the number of output channels in the first convolutional layer. To reduce the model's channel dimensions, we scale this base hyperparameter by a reduction factor, effectively reducing the width of all layers proportionally. The following table presents the test accuracy of compressed by KD methods and model folding on CIFAR10 test dataset.The time taken to achieve each accuracy is provided in parentheses next to the corresponding accuracy value. From the table, it is evident that the proposed model folding achieves model compression within seconds, even at high sparsity levels, compared to other KD methods that require tens of hours to complete.
+\begin{table}[h]
+\centering
+\small{
+\resizebox{\textwidth}{!}{
+\begin{tabular}{l|c|c|c|c|c}
+\toprule
+Sparsity & Full model & 10\% & 25\% & 50\% & 70\% \\
+\midrule
+ABM~\citep{micaelli2019zeroshotknowledgetransferadversarial} & 94.72 & 93.30 (17h19m) & 91.99 (16h8m) & 89.42 (15h30m) & 85.43 (13h23m) \\
+DFAD~\citep{chen2019datafreelearningstudentnetworks} & 94.72 & 93.79 (2h31m) & 93.52 (2h3m) & 92.04 (2h1m) & 89.67 (1h54m) \\
+DAFL~\citep{fang2020datafreeadversarialdistillation} & 94.72 & 71.73 (16h48m) & 77.80 (15h39m) & 68.06 (15h19m) & 53.86(76h34m) \\
+SpaceshipNet~\citep{yu2023data} & 94.72 & 94.50 (42h33m) & 93.95 (40h3m) & 92.96 (37h57m) & 91.53 (27h10m) \\
+\textbf{Model Folding (ours)} & 94.72 & 94 (56.35s) & 92 (53.55s) & 88 (55.75s) & 82 (54.95s) \\
+\bottomrule
+\end{tabular}
+}
+}
+\caption{\textbf{Performance comparison of knowledge distillation and model folding}, showing accuracy (\%) and runtime (in parentheses). The sparsity levels indicate the percentage of weights pruned.}
+\label{tab:kd_comparison}
+\end{table}
+
+
+
+\section{Inference Speed of Folded Models on Edge Devices}
+\label{appx:devices}
+ We apply model folding on a LeNet5 model pre-trained on FashionMNIST with different sparsity, and then evaluate the folded models on NVIDIA Jetson Nano, ESP-EYE, and Arduino Nano 33 BLE. All models are converted and executed as a float32 Tensorflow Lite model in all devices.
+
+\begin{table}[h]
+\centering
+\small{
+\resizebox{\textwidth}{!}{
+\begin{tabular}{l|ccc|ccc|ccc|ccc}
+\toprule
+Sparsity & \multicolumn{3}{c|}{10\%} & \multicolumn{3}{c|}{25\%} & \multicolumn{3}{c|}{50\%} & \multicolumn{3}{c}{70\%} \\
+         & Runtime & RAM  & Flash  & Runtime & RAM  & Flash  & Runtime & RAM  & Flash  & Runtime & RAM  & Flash  \\
+\midrule
+NVIDIA Jetson Nano~\citep{nvidia_jetson_nano}        & 2ms   & 59.5K & 3.4M & 2ms   & 55.7K & 2.8M & 1ms   & 48.0K & 1.9M & 1ms   & 36.5K & 1.2M \\
+ESP-EYE~\citep{esp_eye}                   & 2591ms & 59.5K & 3.4M & 1868ms & 55.7K & 2.8M & 1532ms & 48.0K & 1.9M & 1186ms & 36.5K & 1.2M \\
+Arduino Nano 33 BLE Sense~\citep{arduino_nano_33_ble} & 6831ms & 59.5K & 3.4M & 3726ms & 55.7K & 2.8M & 4218ms & 48.0K & 1.9M & 2969ms & 36.5K & 1.2M \\
+\bottomrule
+\end{tabular}
+}
+}
+\caption{\textbf{Performance and resource usage at various sparsity levels across devices}, with detailed breakdowns for runtime (ms), RAM usage (K), and Flash storage usage (M).}
+\label{tab:device_performance}
+\end{table}
+
+
+
+
+
+
+\section{Deep Inversion Sample Images}
+\label{appx:dee_inversion}
+
+Deep Inversion (DI)~\citep{yin2020dreamingdistilldatafreeknowledge} generates synthetic images from the uncompressed network by optimizing noise to match the internal statistics stored in BatchNorm layers. These images, exemplified in \figref{fig:deep_dream}, which reflect the original data's statistical properties, are used during model folding to restore data statistics in the compressed network, ensuring accuracy without requiring external data.
+
+\begin{figure*}[h!]
+    \centering
+     \includegraphics[width=.43\linewidth]{figs/deep_inversion_samples.pdf}
+    \caption{\textbf{Sample images generated by Deep Inversion~\citep{yin2020dreamingdistilldatafreeknowledge} using ResNet18 trained on CIFAR100.} These images are generated from the uncompressed network and used in model folding to restore data statistics in the compressed network.}
+    \label{fig:deep_dream}
+\end{figure*}
+
+
+
+
+
+\section{Further Related Work}
+\label{appx:related}
+
+Model folding intersects with several established approaches in model compression, network architecture optimization and model merging. This section outlines key related works that inspired the development of model folding, highlighting both their contributions and limitations.
+ 
+\subsection{Model compression}
+Model compression techniques reduce models' size and computational requirements while maintaining or minimally sacrificing performance. Various methods have been developed. Most can be classified as pruning, quantization, knowledge distillation, and low-rank factorization. Traditional pruning techniques~\citep{han2015learning, NIPS1989_6c9882bb,li2016pruning,hassibi1993optimal,entezari2020classdependentcompressiondeepneural}, structured or unstructured, involve removing weights, neurons, or filters that are deemed less important, typically measured by the magnitude of their contributions (\eg, L$_1$ or L$_2$ norm)~\citep{entezari2020classdependentcompressiondeepneural,li2017pruningfiltersefficientconvnets,cheng2023surveydeepneuralnetwork}. While effective in reducing the size of the model, pruning often leads to a degradation of performance that requires fine-tuning or complete retraining of the network~\citep{cheng2023surveydeepneuralnetwork,han2015learning,frankle2018lottery,frantar2022optimal,he2018multi}. Quantization~\citep{gupta2015deep,zhou2017incremental,li2016ternary} reduces the precision of the numerical values in a model, from floating-point to lower-bit representations (\eg, 8-bit integers). This approach significantly reduces the model's memory footprint and speeds up computation, especially when combined with hardware accelerators designed for low-precision arithmetic~\citep{gholami2021surveyquantizationmethodsefficient}. Like pruning, post-training quantization may also require fine-tuning to restore model performance. Knowledge distillation~\citep{hinton2015distillingknowledgeneuralnetwork} trains a smaller model, called the student, to replicate a well-trained larger model, called the teacher, by mimicking the output of the teacher model, which transfers knowledge between the teacher model and the student model. While effective in transferring knowledge and reducing model size, the training process for knowledge distillation can be computationally expensive and time-consuming~\citep{hinton2015distillingknowledgeneuralnetwork,Gou_2021}. Moreover, knowledge distillation often assumes substantial differences between student and teacher model architectures~\citep{Gou_2021}.
+Low-rank factorization decomposes weight matrices into lower-rank matrices to reduce parameter size through such as singular value decomposition~\citep{ren2023lowrankpruneandfactorizelanguagemodel,horvath2024maestrouncoveringlowrankstructures} or tensor decomposition ~\citep{lebedev2015speedingupconvolutionalneuralnetworks, kim2016compressiondeepconvolutionalneural}. Approaches such as mixture of experts~\citep{jacobs1991adaptive,shazeer2017outrageously}, subspace-configurable networks~\citep{wang2024subspaceconfigurablenetworks,papst2024scn} and resource-efficient deep subnetworks~\citep{corti2024redsresourceefficientdeepsubnetworks,corti2024hads}, explore dynamic model reconfiguration to minimize the number of active weights during inference.
+
+
+\fakeparagraph{Structured pruning} 
+Structured pruning is of particular interest because it removes entire structures (such as neurons, channels, or layers)~\citep{entezari2020classdependentcompressiondeepneural,li2016pruning,luo2017iccv,hu2016networktrimming, wen2016learning} rather than individual parameters, reducing model complexity while maintaining or even improving performance. This method is especially valuable for enhancing efficiency with easily implemented acceleration in resource-constrained environments~\citep{wang2020sparse,liu2024lightweightdeeplearningresourceconstrained}. However, structured pruning typically requires additional retraining or fine-tuning~\citep{he2017iccv,liu2024lightweightdeeplearningresourceconstrained,luo2017thinet}. 
+Recent work by \citet{theus2024metapruning} combines model pruning and fusion using Optimal Transport theory, demonstrating that a significant portion of pruning accuracy can be recovered without access to training data. However, the impact of pruning on the model's data statistics and how to recover them is not addressed.
+
+
+\subsection{Model merging}
+Model merging combines multiple models to generate a single, unified model which leverages the strengths and diversity of each individual model. It particularly benefits ensemble learning and distributed training scenarios, where models are trained independently on different subsets of data or across different devices. Merging can be achieved by averaging the parameters of model trained independently. Recently, multiple methods have been developed to enhance model performance and robustness. MTZ~\citep{he2018multi} and ZipIt!~\citep{stoica2024zipitmergingmodelsdifferent} compress multiple models pre-trained for different tasks by merging them through neuron sharing. Model soup~\citep{wortsman2022model} averages the weights of multiple fine-tuned models from same initialization to improve accuracy and robustness without increasing inference time. Taking permutation invariance of neural networks into account, a finding~\citep{entezari2022role} shows the interpolation between models trained with SGD has no barrier. Git Re-Basin~\citep{ainsworth2023git} utilizes activation matching and weight matching to achieve permutated alignment between models trained from different initialization. REPAIR~\citep{jordan2022repair} mitigate variance collapse problem while aligning neurons by rescaling the preactivations of fused models. PAPA leverages a population of diverse models trained on different data variations and slowly pushes the weights of the networks towards the population average~\citep{papa}. A recent work~\citep{yamada2023revisitingpermutationsymmetrymerging} shows that for model merging on different datasets, using original or condensed datasets during the model merging process can significantly improve accuracy. However, those methods do not consider model efficiency and internal parameter redundancy. Another recent work \citep{theus2024metapruning} achieves intra-layer model fusion by integrating optimal transport~\citep{monge1781memoire,kantorovich2006translocation,singh2020model} to fuse computational structures in the model without fine-tuning. We note that this approach is orthogonal to the problem solved in this paper, as we do not consider intra-layer dependencies.
+
+\fakeparagraph{Merging multiple computational units}
+Merging computational units has been extensively explored in ensemble methods. \citet{wortsman2022model} demonstrate that combining multiple models fine-tuned from the same pretrained initialization enhances both accuracy and robustness. \citet{ainsworth2023git} extend this approach to models trained on the same data with different initializations, albeit with some accuracy loss. \citet{jordan2022repair} improve upon Git Re-Basin by adjusting batch normalization layers where applicable. IFM~\cite{chen2023going} and ZipIt!~\cite{stoica2024zipitmergingmodelsdifferent} focus on merging multiple computational units within a single model, pioneering this approach.

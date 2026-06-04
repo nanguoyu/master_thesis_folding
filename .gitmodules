@@ -1,0 +1,6 @@
+[submodule "knowledge/ModelFolding"]
+	path = knowledge/ModelFolding
+	url = https://github.com/marza96/ModelFolding.git
+[submodule "knowledge/model-folding-universal"]
+	path = knowledge/model-folding-universal
+	url = https://github.com/nanguoyu/model-folding-universal.git

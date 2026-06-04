@@ -1,0 +1,225 @@
+{
+   "sources" : [
+      {
+         "usage" : "toplevel",
+         "filename" : "arxiv.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "arxiv.bib"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "fancyhdr.sty"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/ac_vr_sp.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/ac_vr_sp_cb.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/ac_vr_sp_cp.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/ac_vr_sp_cp2.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/ac_vr_sp_cp3.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/clustering_comparison.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/clustering_comparison2.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/llm_folding_ratio_search.csv_combined.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/model_merging_pipeline.pdf"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/resnet18_cifar10_clustering_plot.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/resnet18_cifar10_matching_plot.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/resnet18_cifar10_noR_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/resnet18_imagenet_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/resnet50_ciafr100_wider_model_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/var_collapse_approx.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/var_explosion.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/variance_collapse.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/vgg11_bn_cifar10_noR_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figs/vgg11bn_imagenet_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/clustering_comparison.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/comparison_resnet18_ciafr10_model_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/comparison_resnet18_model_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/comparison_resnet18_model_acc_no_datafree_repair.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/comparison_vgg11_ciafr10_model_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/comparison_vgg11bn_ciafr10_model_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/comparison_vgg11bn_imagenet_model_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/comparison_vgg11bn_model_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/comparison_vgg11bn_model_acc_no_datafree_repair.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/hist/hist_matched_channles_vgg11_2xwider_CIFAR10.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/hist/hist_matched_channles_vgg11_3xwider_CIFAR10.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/hist/hist_matched_channles_vgg11_CIFAR10.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/hist/hist_reslenetBN_v_reslenetBN_8Xwider.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/model_folding_pipeline.pdf"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/model_folding_pipeline.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/resnet18_cifar10_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/resnet18_cifar10_acc_L1_regularization.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/resnet18_cifar10_clustering_acc.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/resnet18_cifar10_noR_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/resnet18_cifar10_three_distances.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/resnet18_cifar10_three_distances_beforeREPAIR.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/resnet18_imagenet_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/resnet50_ciafr100_wider_model_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/vgg11_bn_cifar10_acc_L1_regularization.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/vgg11_bn_cifar10_noR_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/vgg11_cifar10_wider_model_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/vgg11bn_cifar10_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/vgg11bn_imagenet_acc.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/vis_weight/vis_conv1_6x3.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/vis_weight/vis_layer1.0.conv2_6x6.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/vis_weight/vis_layer4.1.conv2_6x6.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "old_figs/vis_weight/weight_resnet18_conv1.png"
+      }
+   ],
+   "version" : 2,
+   "texlive_version" : 2023,
+   "process" : {
+      "compiler" : "pdflatex"
+   }
+}
