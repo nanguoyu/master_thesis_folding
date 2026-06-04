@@ -1,0 +1,92 @@
+[
+  {
+    "tag": "baseline",
+    "path": "weights/yolov8m.pt",
+    "params": 25886080,
+    "mp": 0.715496249679427,
+    "mr": 0.6102425160625167,
+    "f1": 0.6586907067591994,
+    "map50": 0.6653399932364314,
+    "map5095": 0.4978310188572355
+  },
+  {
+    "tag": "folded_no_repair_pr0.1",
+    "path": "weights/without_repair_fix/0.1/yolo_conv5_conv7_folded_without_repair_fix.pt",
+    "params": 25571872,
+    "mp": 0.7087626051698775,
+    "mr": 0.6123849797976197,
+    "f1": 0.6570579245769572,
+    "map50": 0.6627545995262707,
+    "map5095": 0.4970128709904003
+  },
+  {
+    "tag": "folded_fp_repair_pr0.1",
+    "path": "weights/forward_pass_repair_fix/0.1/yolo_conv5_conv7_folded_forward_pass_repair_fix_calib1000.pt",
+    "params": 25571872,
+    "mp": 0.6915763305577476,
+    "mr": 0.59416783775317,
+    "f1": 0.6391817338245709,
+    "map50": 0.640607295030284,
+    "map5095": 0.4721480523615703
+  },
+  {
+    "tag": "folded_no_repair_pr0.3",
+    "path": "weights/without_repair_fix/0.3/yolo_conv5_conv7_folded_without_repair_fix.pt",
+    "params": 24945376,
+    "mp": 0.7020124482931507,
+    "mr": 0.5865253044192761,
+    "f1": 0.639093025451528,
+    "map50": 0.6449479450569455,
+    "map5095": 0.4825980952748827
+  },
+  {
+    "tag": "folded_fp_repair_pr0.3",
+    "path": "weights/forward_pass_repair_fix/0.3/yolo_conv5_conv7_folded_forward_pass_repair_fix_calib1000.pt",
+    "params": 24945376,
+    "mp": 0.6819099558660158,
+    "mr": 0.5850413389186511,
+    "f1": 0.6297719578614719,
+    "map50": 0.6302095220700025,
+    "map5095": 0.46516148504014593
+  },
+  {
+    "tag": "folded_no_repair_pr0.5",
+    "path": "weights/without_repair_fix/0.5/yolo_conv5_conv7_folded_without_repair_fix.pt",
+    "params": 24318880,
+    "mp": 0.6560988107723355,
+    "mr": 0.52667929888744,
+    "f1": 0.5843080230895434,
+    "map50": 0.576676581204769,
+    "map5095": 0.42845798771595767
+  },
+  {
+    "tag": "folded_fp_repair_pr0.5",
+    "path": "weights/forward_pass_repair_fix/0.5/yolo_conv5_conv7_folded_forward_pass_repair_fix_calib1000.pt",
+    "params": 24318880,
+    "mp": 0.6495543806516861,
+    "mr": 0.5619892842226057,
+    "f1": 0.6026069232601926,
+    "map50": 0.5989052658581775,
+    "map5095": 0.44008231198104014
+  },
+  {
+    "tag": "folded_no_repair_pr0.7",
+    "path": "weights/without_repair_fix/0.7/yolo_conv5_conv7_folded_without_repair_fix.pt",
+    "params": 23692384,
+    "mp": 0.5234345557695814,
+    "mr": 0.21292958578107407,
+    "f1": 0.30271585889797414,
+    "map50": 0.2301420354948366,
+    "map5095": 0.1680645678001091
+  },
+  {
+    "tag": "folded_fp_repair_pr0.7",
+    "path": "weights/forward_pass_repair_fix/0.7/yolo_conv5_conv7_folded_forward_pass_repair_fix_calib1000.pt",
+    "params": 23692384,
+    "mp": 0.586730439553345,
+    "mr": 0.4666371064166645,
+    "f1": 0.51983742177839,
+    "map50": 0.4955827253729577,
+    "map5095": 0.3602884881986338
+  }
+]

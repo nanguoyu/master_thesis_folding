@@ -1,0 +1,32 @@
+[
+  {
+    "tag": "baseline",
+    "path": "weights/yolov8m.pt",
+    "params": 25886080,
+    "mp": 0.715496249679427,
+    "mr": 0.6102425160625167,
+    "f1": 0.6586907067591994,
+    "map50": 0.6653399932364314,
+    "map5095": 0.4978310188572355
+  },
+  {
+    "tag": "folded_no_repair",
+    "path": "weights/without_repair_fix/0.1/yolo_conv5_conv7_folded_without_repair_fix.pt",
+    "params": 25571872,
+    "mp": 0.7059360537005899,
+    "mr": 0.6078236668144769,
+    "f1": 0.6532158162387579,
+    "map50": 0.6605026358558866,
+    "map5095": 0.4943939553880666
+  },
+  {
+    "tag": "folded_fp_repair",
+    "path": "weights/forward_pass_repair_fix/0.1/yolo_conv5_conv7_folded_forward_pass_repair_fix_calib1000.pt",
+    "params": 25571872,
+    "mp": 0.6990754165833014,
+    "mr": 0.592613283882551,
+    "f1": 0.6414565017489581,
+    "map50": 0.6426047314200837,
+    "map5095": 0.4746754994346938
+  }
+]
