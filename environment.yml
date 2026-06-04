@@ -1,0 +1,28 @@
+# Mamba/conda environment for the YOLOv8 Model-Folding repo on macOS arm64
+# (also works on Linux x86_64; replace torch wheel if you need a CUDA build).
+#
+# Create:
+#     mamba env create -f environment.yml
+# Activate:
+#     mamba activate folding-yolo
+#
+# `hkmeans` is the IBM Hartigan k-means package; on macOS we install it
+# from GitHub (no PyPI release) and add libcxx so its C extension loads.
+name: folding-yolo
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - libcxx          # needed by hkmeans' C extension on macOS
+  - pip
+  - pip:
+      - torch==2.12.0
+      - torchvision==0.27.0
+      - ultralytics==8.4.60
+      - opencv-python==4.13.0.*
+      - pyyaml==6.0.3
+      - Pillow==12.2.0
+      - numpy==2.4.6
+      - scikit-learn==1.9.0
+      - torch_pruning==1.6.0
+      - git+https://github.com/IBM/hartigan-kmeans.git
