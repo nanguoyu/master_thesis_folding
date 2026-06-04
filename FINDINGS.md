@@ -1,93 +1,54 @@
-# Experimental Progress & Findings — Model Folding on YOLOv8
+# Notes on the folding code and experiments
 
-Notes from Dong, reviewing your implementation and running follow-up
-experiments. Written for you (Manuel) to read first; we can talk through it
-in the next meeting.
+Manuel,
 
-Repo now lives at `https://github.com/nanguoyu/master_thesis_folding` (a fork
-of your original). Your `main` is set as `upstream` so you can `git pull
-upstream/main` to get any new work from your side. Everything we did has
-been pushed to `origin/main` on the fork.
+I took a longer look at the code and ran a few experiments to dig into
+what your `README_DONG.md` asked about. Wrote it down so we can go through
+it together.
 
----
+Everything is on a fork at `nanguoyu/folding-on-yolo`. Your repo is set
+as `upstream` here; I haven't opened a pull request back to you, the work
+just sits on the fork. Pull from there if you want any of the changes
+locally.
 
-## 1. Where things stood when I started
+## What I changed in the code
 
-Your README_DONG.md asked one main question:
+Five places. Two of them — the BN reset scope and the calibration
+letterboxing — you had already partly fixed in `1dd8777`, nice catch on
+both.
 
-> "I am confused that the forward pass calibration does not increase the
-> accuracy in the folded versions (in the pruned versions, the forward pass
-> does work). Can you maybe take a look at it…?"
+| Bug | What was wrong | Fix |
+|---|---|---|
+| **M2** | `repair_bn_forward_pass` only reset the BN layers downstream of the first folded conv. Then `model.train()` puts the whole model in train mode and the other ~50 BNs silently drift their running stats under default momentum. | Reset every `BatchNorm2d` in the model, like both official repos do. |
+| **B3** | `run_folding_experiment` looked for the first consumer of a folded layer and broke. YOLO's FPN has cases where one source feeds multiple consumers (e.g. a C2f's `cv2.conv` output goes to both the next stride-2 Conv and a head Concat). | Drop the `break`; apply input-fold to every consumer. |
+| **B4** | The block-diagonal `U` expansion in `merge_conv_bn` was sitting inside a `"""..."""` block and never executing. It's needed for concat-fed inputs where one source feeds multiple Conv outputs. | Un-comment the block. |
+| **M5** | Output-side fold rewrote `conv.weight` but never touched `conv.bias`. YOLOv8m's Detect head has six 1×1 convs with `bias=True`. | One-line addition: fold bias through the same projection matrix. |
+| **B2** | k-means input matrix `A` was `[W_l \| W_{l+1}^T]`. Paper and official `concat_weights` also include `γ` and `β`. Two filters with similar spatial weights but very different BN scaling were being clustered together. | Pass the BN module into `cumpute_cluster_matrix_u` and `c2f_layer_folding`; add γ and β as columns of `A`. |
 
-After reading the paper LaTeX, both official repos
-(`marza96/ModelFolding` and `nanguoyu/model-folding-universal`, now under
-`knowledge/`), and your `folding_main.py`, I found two distinct reasons the
-forward-pass REPAIR was misbehaving plus three more correctness bugs in the
-folding engine itself. Two of those (BN reset scope, calibration letterbox)
-you had already partially fixed in commit `1dd8777` before I started
-poking — nice catch.
+There's a `smoke_test_folding.py` at the repo root now. It runs the
+cluster + fold + REPAIR primitives on yolov8n in about 20 seconds on
+CPU. I ran it after every code change. If you mess with `folding_main.py`,
+it'll catch the obvious breakage.
 
-A short summary of every code change made during this round:
+## Environment
 
-| Bug | Severity | File / lines | One-line fix |
-|---|---|---|---|
-| **M2** | major | `folding_main.py` `repair_bn_forward_pass` | Reset *every* `nn.BatchNorm2d` (match official `reset_bn_stats`). Your "downstream of first fold" filter still let upstream BNs drift in `model.train()` mode. |
-| **B3** | blocker | `folding_main.py` `run_folding_experiment` | Drop the `break` after first consumer; FPN-style fan-out has multiple consumers per folded layer. |
-| **B4** | blocker | `folding_main.py` `merge_conv_bn` | Un-comment the block-diagonal `U` expansion for concat-fed inputs — it was sitting inside a triple-quoted string and never executing. |
-| **M5** | major | `folding_main.py` `merge_conv_bn` | Guard conv `bias` in the output-fold branch. Detect-head 1×1 convs carry `bias=True` (6 of them in YOLOv8m), so without this guard any future config that flips them on will shape-mismatch. |
-| **B2** | major | `folding_main.py` `cumpute_cluster_matrix_u`, `c2f_layer_folding` | Include BN γ and β as columns in the k-means input matrix `A`. Two filters with similar spatial weights but very different BN scaling were previously merged together. Matches the paper's `W_tot = [W_l | γ | β | W_{l+1}^T]` and the official `concat_weights()` (non-approx-repair). |
+`environment.yml` builds a reproducible mamba env. The one fiddly thing
+is the IBM Hartigan k-means: no PyPI release, so install it from
+`git+https://github.com/IBM/hartigan-kmeans.git`. The spec file does
+this for you. On macOS arm64 you also need `libcxx` so the C extension
+links. Linux is smoother.
 
-The smoke test (`smoke_test_folding.py`) was added so we don't break the
-fold/REPAIR primitives going forward; it runs in ~20 s on CPU and gets
-exercised after every code change.
+## What I ran
 
----
+Three configurations, four PR values each (0.1, 0.3, 0.5, 0.7), with
+and without forward-pass REPAIR. Calibration is 1000 random images from
+COCO val2017; evaluation is `model.val()` on the full 5000-image val2017
+at `imgsz=640`. The JSON results live in `results_save/save_statistics_eval/`.
 
-## 2. Environment
+### `yolo_conv5_conv7` on yolov8m
 
-`environment.yml` builds a reproducible mamba env (Python 3.11, torch 2.12,
-ultralytics 8.4.60). The only fiddly piece is **IBM Hartigan k-means** —
-no PyPI release, install from `git+https://github.com/IBM/hartigan-kmeans.git`;
-the spec file already does that. On macOS arm64 add `libcxx` so its C
-extension loads.
-
-`smoke_test_folding.py` runs the fold + REPAIR primitives on yolov8n in
-~20 s and is what I use after every code change.
-
----
-
-## 3. Methodology — what each experiment measures
-
-All folding uses your existing engine (`folding_main.py`) with the bug fixes
-above. Calibration for forward-pass REPAIR uses **1000 images sampled from
-COCO val2017**; evaluation is **`model.val()` on the full 5000-image
-val2017** at `imgsz=640`. We report:
-
-- Params (raw nn.Module count, not the slightly different count from
-  ultralytics' `fused` summary — they differ by a few thousand for buffer
-  reasons; we use the raw count consistently).
-- F1 = harmonic mean of mean-precision and mean-recall over all 80 classes.
-- mAP50 and mAP50-95 from ultralytics' standard COCO eval.
-
-For every config we report two folded variants:
-- **`folded_no_repair_fix`** — folded weights + your `merge_conv_bn` BN
-  statistics heuristic (the inverse-std merge), no recalibration.
-- **`folded_fp_repair_fix`** — same fold, plus the corrected
-  `repair_bn_forward_pass` (resets every BN, runs 1000 calibration images,
-  switches back to eval mode). This is the closest thing to the paper's
-  data-driven **Fold-R**.
-
-We **do not** yet implement Fold-AR (the paper's closed-form, data-free
-alternative). That's open work.
-
----
-
-## 4. Results
-
-### 4.1 `yolo_conv5_conv7` on yolov8m (only 2 plain Convs folded)
-
-Folded layers: `model.5.conv`, `model.7.conv`. Maximum reduction at PR=0.7
-is just 8.5% because only two layers are touched.
+Only model.5.conv and model.7.conv get folded. Even at PR=0.7 the total
+reduction is just 8.5%.
 
 | PR | Mode | Params | Δ params | F1 | mAP50 | mAP50-95 |
 |---:|---|---:|---:|---:|---:|---:|
@@ -101,13 +62,14 @@ is just 8.5% because only two layers are touched.
 | 0.7 | no_repair | 23,692,384 | −8.47% | 0.3027 | 0.2301 | 0.1681 |
 | 0.7 | fp_repair | 23,692,384 | −8.47% | **0.5198** | 0.4956 | 0.3603 |
 
-REPAIR–vs–no-repair ΔF1 by PR: −0.018 / −0.009 / +0.018 / **+0.217**.
-**Breakeven is around PR=0.5.** This reproduces your original observation
-that REPAIR hurts at low PR (we now know exactly why — see §5).
+ΔF1 of REPAIR vs no-repair, by PR: −0.018, −0.009, +0.018, **+0.217**.
+Breakeven is around PR=0.5. This reproduces your original observation
+that REPAIR hurts at low PR.
 
-### 4.2 `yolo_conv4_to_conv8` on yolov8m (C2f blocks + plain convs across model.4–8)
+### `yolo_conv4_to_conv8` on yolov8m
 
-Many layers folded together; total reduction now scales meaningfully.
+Folds the whole model.4–8 stretch, including the three backbone C2f
+blocks. Now we get meaningful compression.
 
 | PR | Mode | Params | Δ params | F1 | mAP50 | mAP50-95 |
 |---:|---|---:|---:|---:|---:|---:|
@@ -121,17 +83,18 @@ Many layers folded together; total reduction now scales meaningfully.
 | 0.7 | no_repair | 16,976,666 | −34.42% | 0.0000 | 0.0000 | 0.0000 |
 | 0.7 | fp_repair | 16,976,666 | −34.42% | 0.0089 | 0.0028 | 0.0013 |
 
-REPAIR ΔF1: **+0.012 / +0.278 / +0.136 / +0.009**. Here REPAIR earns its
-keep from PR=0.1 already, and at PR=0.3 it rescues the model from
-catastrophic collapse (F1 jumps from 0.19 to 0.47).
+ΔF1 of REPAIR vs no-repair: +0.012, **+0.278**, +0.136, +0.009. REPAIR
+earns its keep starting from PR=0.1, and at PR=0.3 it rescues the model
+from catastrophic collapse (F1 jumps from 0.19 to 0.47).
 
-### 4.3 `yolo_conv4_to_conv8_l` on yolov8l (same config, wider model)
+### Same config on yolov8l
 
-Same folded modules as in 4.2, applied to yolov8l. yolov8l is wider in
-model.4–6 (depth=1.0, width=1.0) but actually slightly narrower at
-model.7/8 because its `max_channels` cap is 512 vs yolov8m's 768. So the
-"wider folds better" hypothesis from the paper is **mixed** here, not
-clean.
+Just point the driver at `weights/yolov8l.pt`. The engine reads channel
+counts and bottleneck counts from the live module list, so yolov8l's
+extra bottlenecks (n=6 vs n=4 in model.4/6, n=3 vs n=2 in model.8) get
+folded automatically; no JSON edits needed. I made a copy
+`yolo_conv4_to_conv8_l.json` with the right `num_channels` for
+documentation, but the engine doesn't read that field.
 
 | PR | Mode | Params | Δ params | F1 | mAP50 | mAP50-95 |
 |---:|---|---:|---:|---:|---:|---:|
@@ -145,186 +108,142 @@ clean.
 | 0.7 | no_repair | 28,036,662 | −35.83% | 0.0000 | 0.0000 | 0.0000 |
 | 0.7 | fp_repair | 28,036,662 | −35.83% | 0.0280 | 0.0059 | 0.0031 |
 
-Result JSONs are in `results_save/save_statistics_eval/`. The
-`*_pr_sweep_b2.json` files are post-B2-fix; the older
-`conv5_conv7_pr01.json` and `conv5_conv7_pr_sweep.json` are pre-fix and
-kept around for comparison.
+## What this tells us
 
----
+Three findings I think are worth talking about.
 
-## 5. What this tells us
+**1. Forward-pass REPAIR is regime-dependent.**
 
-### 5.1 Why forward-pass REPAIR hurt at low PR — answered
+Your observation in `README_DONG.md` — that REPAIR hurt the folded
+model — is correct, *in the regime you were testing*. When folding is
+shallow and per-layer aggressive (PR=0.1 on two convs only), the merged
+BN statistics from your `merge_conv_bn` heuristic are already very
+close to the true post-fold values. Recomputing them from 1000
+calibration images introduces sampling noise that's larger than the
+heuristic's residual error.
 
-At PR=0.1 on 2 isolated Convs, the BN statistics produced by your
-`merge_conv_bn` heuristic (inverse-std averaging) are already very close
-to the true post-fold statistics. Re-estimating them from 1000 calibration
-images introduces *sampling noise* that's bigger than the residual
-heuristic error. The variance-collapse story from the paper is real but
-only kicks in when collapse is severe enough to dominate the noise.
+REPAIR actually helps in two cases:
 
-That happens in two ways:
+- *High per-layer PR on few layers* (`conv5_conv7` PR=0.5+): collapse
+  becomes severe enough to dominate the noise.
+- *Moderate per-layer PR across many layers* (`conv4_to_conv8` PR=0.3):
+  per-layer collapse is small but compounds through ~24 folded convs;
+  REPAIR re-normalizes the whole network globally.
 
-- **High per-layer PR on few layers** — `conv5_conv7` PR=0.5+ — REPAIR
-  breakeven is around PR=0.5, +0.22 F1 by PR=0.7.
-- **Moderate per-layer PR across many layers** — `conv4_to_conv8` PR=0.3 —
-  the per-layer variance distortion is small but **propagates and
-  compounds** through ~24 folded convs. REPAIR globally re-normalizes
-  every BN, undoing the compounded drift. +0.28 F1 lift at PR=0.3.
+The second case is the practically useful one. Your PR=0.1/0.2/0.3
+experiments on `conv5_conv7` were sitting in the worst region for
+REPAIR: not enough collapse to need it, and enough calibration noise
+to make it hurt. Not a bug in REPAIR and not a bug in your code, just
+a regime mismatch.
 
-The second case is more practically useful (you get real compression at
-modest per-layer aggression). Your original PR=0.1/0.2/0.3 experiments on
-`conv5_conv7` sat in exactly the worst region: collapse small enough that
-your `merge_conv_bn` heuristic handles it well, calibration noise large
-enough that REPAIR makes it worse. **Not a bug in REPAIR — a regime
-mismatch.**
+**2. The compression ceiling without fine-tune is around 18–20% params.**
 
-### 5.2 Useful compression ceiling without fine-tune is around 18–20% params
+Both `conv4_to_conv8` runs land in the same place at PR=0.3 with REPAIR:
 
-- `conv4_to_conv8` PR=0.3 on yolov8m: −17.9% params, F1=0.47, mAP50-95=0.30.
-- `conv4_to_conv8_l` PR=0.3 on yolov8l: −18.9% params, F1=0.49, mAP50-95=0.32.
+| | yolov8m | yolov8l |
+|---|---:|---:|
+| Reduction | −17.9% | −18.9% |
+| mAP50-95 | 0.301 | 0.321 |
 
-Beyond that, both no_repair and fp_repair fall off a cliff. PR=0.5 is
-borderline-broken, PR=0.7 is dead. This matches the paper's qualitative
-claim that data-free folding is best around 20–50% sparsity for CIFAR
-models — YOLOv8m + COCO is harder because detection is more sensitive to
-small statistics perturbations than classification.
+Beyond that both no-repair and fp_repair fall off a cliff. PR=0.5 is
+borderline-broken, PR=0.7 is dead. The paper claims data-free folding
+works up to 50–70% sparsity on CIFAR classifiers; YOLOv8m + COCO is
+harder because detection is more sensitive to per-channel statistics
+than classification. Worth saying explicitly in the thesis.
 
-### 5.3 Wider folds better in absolute terms — but doesn't extend the Pareto frontier of the YOLOv8 size family
+**3. Wider folds better in absolute terms, but folding doesn't extend
+YOLOv8's Pareto frontier.**
 
-Comparing the two `conv4_to_conv8` sweeps at matched PR (both with
-fp_repair):
+At matched PR, yolov8l wins at every point we tested:
 
-| PR | yolov8m F1 | yolov8l F1 | l − m |
-|---:|---:|---:|---:|
-| 0 (baseline) | 0.6587 | 0.6828 | +0.024 |
-| 0.1 | 0.6159 | 0.6357 | +0.020 |
-| 0.3 | 0.4718 | 0.4874 | +0.016 |
-| 0.5 | 0.1374 | 0.1818 | +0.044 |
+| PR | yolov8m F1 (fp_repair) | yolov8l F1 (fp_repair) |
+|---:|---:|---:|
+| 0 | 0.6587 | 0.6828 |
+| 0.1 | 0.6159 | 0.6357 |
+| 0.3 | 0.4718 | 0.4874 |
 
-yolov8l wins at every PR. So **at matched PR**, wider is more
-fold-resilient — consistent with the paper.
-
-But the more useful question is **at matched params**:
+This part is consistent with what the paper says about wider models.
+The interesting question, though, is at matched *params*. Every
+folded-l configuration we ran sits above unfolded yolov8m in params
+and below it in mAP:
 
 | Configuration | Params | mAP50-95 |
 |---|---:|---:|
-| **yolov8m baseline (unfolded)** | **25.9M** | **0.498** |
-| yolov8l + fold PR=0.5 + REPAIR | 31.2M | 0.068 |
-| yolov8l + fold PR=0.3 + REPAIR | 35.4M | 0.321 |
-| yolov8l + fold PR=0.1 + REPAIR | 40.6M | 0.473 |
-| yolov8l baseline (unfolded) | 43.7M | 0.524 |
+| yolov8m baseline | 25.9M | 0.498 |
+| yolov8l fold PR=0.5 + REPAIR | 31.2M | 0.068 |
+| yolov8l fold PR=0.3 + REPAIR | 35.4M | 0.321 |
+| yolov8l fold PR=0.1 + REPAIR | 40.6M | 0.473 |
+| yolov8l baseline | 43.7M | 0.524 |
 
-For any folded-yolov8l point we tested, the unfolded yolov8m sits at a
-smaller param count *and* higher mAP. Folding doesn't open a new Pareto
-point in the YOLOv8 size family — the n/s/m/l/x scales already cover the
-curve. The paper's "wider folds better" demonstrations were on
-ResNet/VGG, where there's no pre-tuned scale family, so folding was the
-only path to a smaller-and-still-good model. YOLOv8 is different.
+For any folded-l point we tested, just using unfolded yolov8m would
+have been smaller and more accurate. YOLOv8's n/s/m/l/x family already
+covers this part of the curve well; folding doesn't open a new Pareto
+point in this family.
 
-This is, I think, an *honest negative finding* worth including in your
-thesis. It does not invalidate the algorithm — it tells you when folding
-is the right tool and when it isn't.
+That's not a knock on the algorithm. It's a knock on the use case.
+The paper's ResNet18→ResNet50 and VGG width-sweep results sit in
+domains where there's no manually-tuned scale family. Here there is
+one and it's well-tuned. I think this is honest and worth saying in
+the thesis writeup — it doesn't invalidate folding, it tells us when
+folding is the right tool.
 
-### 5.4 The clustering input matters less than you'd think
+## A side note about the B2 clustering fix
 
-The B2 fix (adding BN γ, β to the k-means input matrix) changed F1 by at
-most 0.004 in `conv5_conv7` low-PR cases. At PR=0.7 on `conv5_conv7`
-no_repair, the post-B2 fix accidentally made it worse (F1 0.50 → 0.30):
-because YOLOv8m's BN γ values are O(1) while individual conv weights are
-O(0.01), the BN columns dominate the clustering distance at small fold
-sizes, biasing toward BN-similar (not weight-similar) clusters. When
-that's combined with no REPAIR to fix the resulting unusual statistics,
-the model breaks more than under the pre-B2 raw-weight clustering.
+When I added γ and β to the k-means input matrix to match the official
+code, the F1 change was at most 0.004 on `conv5_conv7` at low PR. But
+on PR=0.7 + no_repair, it made things noticeably worse (F1 went
+from 0.50 to 0.30). Reason: YOLOv8m's γ values are O(1) while
+individual conv weight entries are O(0.01), so once you add γ as a
+column it dominates the clustering distance at small fold sizes.
+Without REPAIR to clean up afterwards, the BN-biased clusters are
+worse than the original raw-weight ones.
 
-The B2 fix matches the official `concat_weights()` faithfully, so we
-keep it on. But it's worth noting that "match the paper" and "best
-YOLO performance" aren't always the same thing — at PR=0.5+ with
-REPAIR enabled, B2 is fine; at low PR without REPAIR, raw-weight
-clustering was accidentally better.
+The fix is the right one — it matches the paper and both official
+repos — but "match the paper" and "best YOLO performance" aren't
+always the same thing. Probably worth a footnote in the thesis if
+you compare pre-B2 and post-B2 numbers (the pre-B2 conv5_conv7 JSONs
+are kept around in `results_save/save_statistics_eval/` for this).
 
----
+## What I didn't get to
 
-## 6. Things I deliberately did **not** do
+- **Fold-AR (paper Algorithm 1).** The closed-form, data-free repair.
+  The paper's main contribution and still not implemented. It would
+  specifically help in the regime where forward-pass REPAIR is too
+  noisy — exactly the `conv5_conv7` low-PR cases you started with.
+  Needs no calibration data so it sidesteps both the bugs you and I
+  have been chasing. This is the next major code item.
+- **Neck (PAN-FPN) folding.** I sketched `yolo_neck.json` but didn't
+  run it. The blocker is real: Concats in the neck fan in from both a
+  folded source and a frozen source. `model.12.cv1.conv`'s input is
+  960 channels = 576 from the frozen SPPF plus 384 from the folded
+  `model.6.cv2.conv`. The `pre` field in your JSON only allows one
+  upstream per consumer, and `merge_conv_bn`'s block-diagonal U
+  expansion needs `actual_in_channels % n_original == 0`. 960 / 384
+  isn't integer. The clean fix is making `pre` list-valued and
+  building the consumer's U as a horizontal concat of (each source's
+  U, or identity for frozen sources). Roughly 80 LOC of engine
+  change. If we want meaningful compression past 20%, this is the
+  thing to do.
+- **SPPF folding.** You already flagged this. The internal MaxPool
+  plus 4-way concat needs special handling that `c2f_layer_folding`
+  doesn't cover.
+- **yolov8s/x.** The wider-folds-better story would be sharper at
+  yolov8x; yolov8n would close the loop on the negative direction.
+- **Latency / GFLOPs measurement.** Folding doesn't change depth, so
+  the wall-clock speedup is probably smaller than the param reduction
+  suggests. Worth measuring before claiming compression.
 
-- **Fold-AR (paper Algorithm 1)** — closed-form, data-free repair. The
-  paper's main data-free contribution. Not implemented. It would
-  particularly help in the regime where forward-pass REPAIR is too noisy
-  (i.e. low-PR / few-layer cases like `conv5_conv7` PR=0.1). I left it as
-  the next major code item.
-- **SPPF folding (model.9)** — you flagged this as future work. The
-  internal MaxPool + 4-way concat needs special handling that
-  `c2f_layer_folding` doesn't cover.
-- **Neck (PAN-FPN) folding** — we designed `yolo_neck.json` but did not
-  run it. The neck's Concat layers fan in from *both* a folded source and
-  a frozen source (e.g. `model.12.cv1.conv` input = 576 ch from frozen
-  SPPF + 384 ch from folded `model.6.cv2.conv`). Your current `pre`
-  schema in the folding plan only allows one upstream per consumer, and
-  `merge_conv_bn`'s block-diagonal `U` expansion only fires when
-  `actual_in_channels` is an integer multiple of `n_original` — which a
-  mixed concat (576 + 384) is not. **This is a real engineering
-  blocker.** Two options for fixing:
-    - Extend `pre` to be list-valued (each upstream contributes a block;
-      frozen sources contribute identity). ~80 LOC engine change.
-    - Restrict neck folding to `cv2.conv` outputs only, never `cv1.conv`.
-      Loses ~70% of the neck gain.
-  We didn't pick one. Up to you.
-- **Detect-head folding** — `model.22.cv2.X.0.conv` / `cv3.X.0.conv` have
-  `bias=True`; M5 already guards them, but their output channels are
-  fixed by the (4 + 80) detection format. So head folding is mostly an
-  *input-side* problem driven by neck folding (above).
-- **yolov8s/n/x** — the wider-is-better story should be sharper at
-  yolov8x (more redundancy) and inverted at yolov8n (less). Not run.
+## Stuff to talk about
 
----
+- Fold-AR next, or the neck engine extension first? Fold-AR is
+  paper-faithful but only helps in regimes we now understand. The
+  neck engine extension is more work but unlocks the actual
+  compression ceiling. I'd lean toward neck, but it's a 4–6 hour
+  change.
+- Whether to test yolov8x for the thesis. Probably a few hours of
+  cluster time.
+- The "doesn't extend Pareto" framing — happy to discuss whether and
+  how to put that in the writeup.
 
-## 7. Suggestions for your thesis writeup
-
-A few framings that I think hold up well, based on what we ran:
-
-1. **"REPAIR is regime-dependent, not universally good."** This is your
-   most defensible empirical observation. Frame the original
-   confusing-behavior of `conv5_conv7` PR=0.1 as a *positive result* —
-   you discovered the regime where data-driven REPAIR introduces more
-   noise than it fixes. The paper's variance-collapse story only kicks
-   in past a measurable threshold (your `conv4_to_conv8` PR=0.3 vs
-   `conv5_conv7` PR=0.1 contrast makes this very concrete).
-
-2. **"Useful compression without fine-tune is bounded around 18–20%
-   params for YOLOv8 on COCO."** Backed by both yolov8m and yolov8l data.
-   This number is the practical ceiling and it's a reasonable engineering
-   contribution.
-
-3. **"Model folding does not extend the Pareto frontier of an
-   already-tuned scale family."** The wider-folds-better claim is true at
-   matched PR, but doesn't translate to matched-params Pareto
-   improvements when n/s/m/l/x already exist. This is a real conditioning
-   point for the paper's "wider works better" framing that I think it's
-   worth making clear in the thesis. (For Olga and me, this is also
-   useful — we'd want to revisit the claim's scope in a follow-up.)
-
-4. Fine-tune comparison is fair to add as context, **with the caveat**
-   that all data-free / fine-tune-free pruning methods sit at one
-   operating point and YOLO papers that report better numbers use
-   fine-tune. The 2 cited works in your README make this point well.
-
----
-
-## 8. Open questions for the meeting
-
-- Do you want to implement Fold-AR next (it's the paper's flagship
-  data-free repair and would directly address the noise-vs-collapse
-  tradeoff)?
-- Do you want to do the engine change for multi-source `pre` to unlock
-  the neck? That's the only thing standing between us and ~30–40%
-  compression on yolov8m. Risk: moderate, code change ~80 LOC.
-- Should we add yolov8s or yolov8x to the wider-vs-narrower comparison?
-- Latency / GFLOPs measurement — folding doesn't change depth, so the
-  wall-clock speedup may be smaller than the param reduction. Worth
-  measuring before claiming compression.
-
-Happy to walk through any of this. The setup is reproducible on your
-side via `mamba env create -f environment.yml` plus a `git pull` on the
-fork.
-
+Talk soon,
 — Dong
