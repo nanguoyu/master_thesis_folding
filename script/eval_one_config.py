@@ -1,9 +1,12 @@
 """
 Eval the full PR sweep for one config against COCO val2017.
 
-Invoked by eval_array.slurm via:  python script/eval_one_config.py <config_name>
+Invoked by eval_array.slurm via:  python script/eval_one_config.py <config_name> [<baseline_weights>]
 Writes results_save/save_statistics_eval/<config_name>_pr_sweep_b2.json
 (_b2 suffix marks the run as post-B2-fix, so it doesn't clobber pre-fix snapshots.)
+The optional <baseline_weights> defaults to "weights/yolov8m.pt" for back-compat;
+pass "weights/yolov8l.pt" for the l sweep. The folded checkpoint paths already
+key off config_name, so they route correctly when config_name = yolo_conv4_to_conv8_l.
 """
 import json
 import os
@@ -20,11 +23,12 @@ PRS = ["0.1", "0.3", "0.5", "0.7"]
 
 
 def main():
-    if len(sys.argv) != 2:
-        raise SystemExit("Usage: eval_one_config.py <config_name>")
+    if len(sys.argv) not in (2, 3):
+        raise SystemExit("Usage: eval_one_config.py <config_name> [<baseline_weights>]")
     config_name = sys.argv[1]
+    baseline_weights = sys.argv[2] if len(sys.argv) > 2 else "weights/yolov8m.pt"
 
-    models = [("baseline", "weights/yolov8m.pt")]
+    models = [("baseline", baseline_weights)]
     for pr in PRS:
         models.append((
             f"folded_no_repair_pr{pr}",
