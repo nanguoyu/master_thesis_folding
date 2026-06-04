@@ -6,3 +6,5 @@ __pycache__/
 # Auto-downloaded by ultralytics during smoke tests; canonical checkpoints live under weights/.
 /yolov8n.pt
 script/logs/
+# Personal local notes — never commit. Useful for cluster details, secrets, scratch.
+*.local.md
