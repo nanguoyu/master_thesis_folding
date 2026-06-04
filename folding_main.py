@@ -159,6 +159,10 @@ def merge_conv_bn(conv_L, bn_L, conv_next, U, order="output", name="Unknown"):
             folded_weigh = updated_W_l.reshape(n_folded, *original_shape_L[1:])
             conv_L.weight = nn.Parameter(folded_weigh)
             conv_L.out_channels = n_folded
+            # Guard: if the conv has a bias (e.g. Detect head's final 1x1 conv has bias=True),
+            # fold it with the same M projection. For bias-less convs (BN-followed) this is a no-op.
+            if conv_L.bias is not None:
+                conv_L.bias = nn.Parameter(M @ conv_L.bias.data)
             print(f"      {C['bold']}{C['b']}[Debug: Conv Output Fold]{C['res']} {n_original} -> {n_folded} channels {C['y']}{list(conv_L.weight.shape)}{C['res']}")
 
             # 3. BatchNorm layer (Theorem 3.5.3 Page 29)
@@ -212,9 +216,12 @@ def merge_conv_bn(conv_L, bn_L, conv_next, U, order="output", name="Unknown"):
             #                                             [ 0, 0, 1, 0 ]
             #                                             [ 0, 0, 0, 1 ]
             #                                             [ 0, 0, 0, 1 ]
+            assert actual_in_channels % n_original == 0, (
+                f"[merge_conv_bn input-fold] consumer '{name}' has in_channels={actual_in_channels} "
+                f"which is not a multiple of n_original={n_original}"
+            )
             num_paths = actual_in_channels // n_original
 
-            """
             if num_paths > 1:
                 print(f"      {C['dim']}[Debug: Concat Block]{C['res']} {C['y']}Detected {num_paths} paths. Expanding U diagonally.{C['res']}")
                 U_to_use = torch.zeros(actual_in_channels, n_folded * num_paths, device=device)
@@ -222,8 +229,7 @@ def merge_conv_bn(conv_L, bn_L, conv_next, U, order="output", name="Unknown"):
                     U_to_use[i * n_original:(i + 1) * n_original, i * n_folded:(i + 1) * n_folded] = U
                 n_fold_in = n_folded * num_paths
             else:
-            """
-            U_to_use, n_fold_in = U, n_folded
+                U_to_use, n_fold_in = U, n_folded
 
             # Fold Input Weights (Algorithm 1, Step 3)
             W_flat = conv_next.weight.data.permute(1, 0, 2, 3).contiguous().reshape(actual_in_channels, -1)
@@ -334,31 +340,22 @@ def get_module_by_name(model, name):
     return model
 
 
-"""This function fine tunes the folded layers . ONLY this layers get recalibratet (running statistics)"""
+"""This function recalibrates BN running statistics via a forward pass.
+
+Follows the official REPAIR pattern (knowledge/model-folding-universal/core/repair.py:32-50):
+EVERY BatchNorm2d in the model is reset and given momentum=None, then a forward pass
+over the calibration loader populates the running stats as a simple average.
+
+The `folding_plan` argument is kept for callsite compatibility but is ignored — partial
+resets contaminate downstream activations because the un-reset upstream BNs still update
+their running stats in train() mode.
+"""
 def repair_bn_forward_pass(model, loader, device, folding_plan=None, max_samples=1000, verbose=True):
+    if folding_plan is not None and verbose:
+        print(f"   {C['dim']}[REPAIR] Note: folding_plan arg is ignored; resetting ALL BN layers (official behavior).{C['res']}")
     #get all BN layers from the model
-    all_bn_layers = {name: m for name, m in model.named_modules()
+    bn_to_reset = {name: m for name, m in model.named_modules()
               if isinstance(m, nn.BatchNorm2d)}
-    bn_to_reset = {}
-    if folding_plan is not None:
-        # get a set of the actual layers that we folded
-        folded_conv_layers = set(name for name, cfg in folding_plan.items()
-                                 if cfg.get("do_folding", False))
-
-        start_resetting = False
-        # named_modules() iterates in the exact forward-pass execution order
-        for name, m in model.named_modules():
-            # The moment we hit the first folded layer, flip the switch to True
-            if name in folded_conv_layers:
-                start_resetting = True
-
-            # If the switch is flipped AND this module is a BN layer, add it
-            if start_resetting and isinstance(m, nn.BatchNorm2d):
-                bn_to_reset[name] = m
-
-    else:
-        # when no plan is provided => reset all running statistics of all layers
-        bn_to_reset = all_bn_layers
 
     if not bn_to_reset:
         if verbose:
@@ -370,8 +367,7 @@ def repair_bn_forward_pass(model, loader, device, folding_plan=None, max_samples
         bn.reset_running_stats()
     if verbose:
         print(f"\n{C['bold']}{C['cy']}--- REPAIR: BN Forward-Pass Recalibration ---{C['res']}")
-        print(f"   {C['dim']}Resetting {len(bn_to_reset)}/{len(all_bn_layers)} BN layers "
-              f"(folded only):{C['res']}")
+        print(f"   {C['dim']}Resetting {len(bn_to_reset)} BN layers (ALL):{C['res']}")
         for n in sorted(bn_to_reset):
             print(f"      {C['dim']}- {n}{C['res']}")
     #Forward pass => Recalibrate running statistics
@@ -446,11 +442,14 @@ def run_folding_experiment(weights_path, config_path, pairing_rate, number_calib
             conv_L = get_module_by_name(model, layer_L)
             conv_next = None
             conv_next_name = None
+            # Collect ALL consumers of this folded layer (not just the first).
+            # YOLO's neck Concats / FPN can have multiple consumers of the same source.
+            consumers = []  # list of (name, module)
             for next_name, next_settings in folding_plan.items():
                 if next_settings.get('pre') == layer_L:
-                    conv_next = get_module_by_name(model, next_name)
-                    conv_next_name = next_name
-                    break
+                    consumers.append((next_name, get_module_by_name(model, next_name)))
+            if consumers:
+                conv_next_name, conv_next = consumers[0]
             layer_pr = settings.get('pr')
 
             if layer_pr is not None:
@@ -486,8 +485,9 @@ def run_folding_experiment(weights_path, config_path, pairing_rate, number_calib
                 _, bn_folded, _ = merge_conv_bn(conv_L, bn_L, None, U_matrix, order="output", name=bn_name)
                 if bn_folded is not None:
                     set_module_by_name(model, bn_name, bn_folded)
-                if conv_next is not None:
-                    merge_conv_bn(None, None, conv_next, U_matrix, order="input", name=conv_next_name)
+                # Apply input-fold to EVERY consumer (not just the first) — fixes FPN concat targets.
+                for cname, cmod in consumers:
+                    merge_conv_bn(None, None, cmod, U_matrix, order="input", name=cname)
 
             print(f"   {C['g']}Successfully folded {module_name}{C['res']}")
 
