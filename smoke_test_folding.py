@@ -53,7 +53,7 @@ def main():
     print(f"[smoke] baseline forward OK; output type={type(y0).__name__}")
 
     pairing_rate = 0.5
-    U = cumpute_cluster_matrix_u(conv0, conv1, pairing_rate)
+    U = cumpute_cluster_matrix_u(conv0, bn0, conv1, pairing_rate)
     assert U.shape == (16, 8), f"U shape {U.shape} != (16, 8)"
     print(f"[smoke] U shape = {tuple(U.shape)}  (expected (16, 8))")
 
