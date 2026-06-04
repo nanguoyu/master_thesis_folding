@@ -5,6 +5,14 @@ PR=0.1, 1000 calibration images, repair enabled. Calibration uses COCO
 val2017 (no train2017 available on the cluster; COCOImageFolder is
 label-free, so any image directory works).
 """
+import os
+import sys
+
+# Make the repo root importable when run as `python script/run_conv5_conv7_pr01.py`.
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
 from folding_main import run_folding_experiment
 
 
